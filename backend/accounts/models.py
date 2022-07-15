@@ -1,11 +1,10 @@
 import datetime
 from typing import List
 
-from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
-from model_utils.managers import InheritanceManager
 from phone_field import PhoneField
 
 from utils.Singleton import Singleton
@@ -20,8 +19,6 @@ class User(AbstractUser):
 
     phone = PhoneField(blank=False, null=False, verbose_name=u"شماره تلفن همراه", unique=True)
     role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
-
-    objects = UserManager()
 
     class Meta:
         verbose_name = u"کاربر"
@@ -71,9 +68,9 @@ class User(AbstractUser):
         self.is_active = is_active
 
 
-class NormalUser(User):
+class NormalUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
-    objects = InheritanceManager()
 
     def get_score(self):
         return self.score
@@ -88,11 +85,13 @@ class NormalUser(User):
         pass
 
     class Meta:
-        verbose_name = u"کاربر"
-        verbose_name_plural = u"کاربران"
+        verbose_name = u"کاربر عادی"
+        verbose_name_plural = u" کاربران عادی"
 
 
 class Customer(models.Model):
+    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE)
+
     class Meta:
         verbose_name = u"مشتری"
         verbose_name_plural = u"مشتریان"
@@ -152,7 +151,11 @@ class Speciality(models.Model):
 
 
 class Specialist(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    class Meta:
+        verbose_name = u"متخصص"
+        verbose_name_plural = u"متخصصان"
+
+    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE)
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
 
@@ -190,7 +193,12 @@ class Specialist(models.Model):
         return result
 
 
+class ManagerUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+
 class CompanyManager(models.Model):
+    manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE)
 
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
@@ -203,6 +211,7 @@ class CompanyManager(models.Model):
 
 
 class TechnicalManager(models.Model):
+    manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE)
 
     @classmethod
     def search(cls, query):
@@ -213,29 +222,33 @@ class TechnicalManager(models.Model):
 
 # create singleton class for UserCatalogue
 
-class UserCatalogue(metaclass=Singleton):
+class UserCatalogue(QuerySet, metaclass=Singleton):
+    UserRoleToClassMapping = {
+        User.UserRole.Customer[0]: 'Customer',
+        User.UserRole.Specialist[0]: 'Specialist',
+        User.UserRole.CompanyManager[0]: 'CompanyManager',
+        User.UserRole.TechnicalManager[0]: 'TechnicalManager',
+    }
     users = User.objects.all()
 
-    def search_by_username(self, username):
-        return self.users.filter(username=username)
+    def search(self, query):
+        result = self.users
+        for field in ['first_name', 'last_name', 'phone']:
+            if query.get(field):
+                result = result.filter(Q(**{field + '__icontains': query[field]}))
+        if query.get('username'):
+            result = result.filter(Q(username__eq=query['username']))
+        # filter User objects that exist in Customer Table
+        if query.get('role'):
+            result = result.filter(Q(role__icontains=query['role']))
+            result = result.select_subclasses(self.UserRoleToClassMapping[query['role']])
+            if query['role'] == 'specialist':
+                for field in ['speciality']:
+                    if query.get(field):
+                        result = result.filter(Q(**{'specialist__' + field + '__icontains': query[field]}))
+                return result
 
-    def search_by_phone(self, phone):
-        return self.users.filter(phone=phone)
-
-    def search_by_role(self, role):
-        pass
-
-    def search_by_name(self, name):
-        pass
-
-    def search_by_speciality(self, speciality):
-        pass
-
-    def search_by_date(self, date):
-        pass
-
-    def search_by_active(self, active):
-        pass
+        return result
 
     def sort_by_join_date(self, ascending):
         pass
