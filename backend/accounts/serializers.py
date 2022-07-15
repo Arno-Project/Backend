@@ -1,4 +1,5 @@
 from rest_framework.serializers import ModelSerializer
+
 from accounts.models import User, Customer, Specialist, TechnicalManager, CompanyManager, Speciality, NormalUser, \
     ManagerUser
 
@@ -102,7 +103,7 @@ class CompanyManagerFullSerializer(ModelSerializer):
         fields = ('id', 'manager_user')
 
 
-class TecnicalManagerFullSerializer(ModelSerializer):
+class TechnicalManagerFullSerializer(ModelSerializer):
     manager_user = ManagerUserFullSerializer()
 
     class Meta:
@@ -153,6 +154,7 @@ class CustomerRegisterSerializer(NormalUserRegisterSerializer):
         normal_user = super().create(validated_data)
         customer = Customer.objects.create(normal_user=normal_user)
         return customer
+
 
 
 class SpecialistRegisterSerializer(NormalUserRegisterSerializer):

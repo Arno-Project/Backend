@@ -69,7 +69,7 @@ class User(AbstractUser):
 
 
 class NormalUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="normal_user_user")
     score = models.IntegerField(default=0)
 
     def get_score(self):
@@ -90,7 +90,7 @@ class NormalUser(models.Model):
 
 
 class Customer(models.Model):
-    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE)
+    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='customer_normal_user')
 
     class Meta:
         verbose_name = u"مشتری"
@@ -155,7 +155,7 @@ class Specialist(models.Model):
         verbose_name = u"متخصص"
         verbose_name_plural = u"متخصصان"
 
-    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE)
+    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='specialist_normal_user')
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
 
@@ -194,11 +194,12 @@ class Specialist(models.Model):
 
 
 class ManagerUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
 
 
 class CompanyManager(models.Model):
-    manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE)
+    manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
+                                        related_name='company_manager_manager_user')
 
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
@@ -211,7 +212,8 @@ class CompanyManager(models.Model):
 
 
 class TechnicalManager(models.Model):
-    manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE)
+    manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
+                                        related_name='technical_manager_manger_user')
 
     @classmethod
     def search(cls, query):
@@ -222,13 +224,7 @@ class TechnicalManager(models.Model):
 
 # create singleton class for UserCatalogue
 
-class UserCatalogue(QuerySet, metaclass=Singleton):
-    UserRoleToClassMapping = {
-        User.UserRole.Customer[0]: 'Customer',
-        User.UserRole.Specialist[0]: 'Specialist',
-        User.UserRole.CompanyManager[0]: 'CompanyManager',
-        User.UserRole.TechnicalManager[0]: 'TechnicalManager',
-    }
+class UserCatalogue(metaclass=Singleton):
     users = User.objects.all()
 
     def search(self, query):
@@ -241,7 +237,6 @@ class UserCatalogue(QuerySet, metaclass=Singleton):
         # filter User objects that exist in Customer Table
         if query.get('role'):
             result = result.filter(Q(role__icontains=query['role']))
-            result = result.select_subclasses(self.UserRoleToClassMapping[query['role']])
             if query['role'] == 'specialist':
                 for field in ['speciality']:
                     if query.get(field):
