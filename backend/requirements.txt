@@ -3,6 +3,8 @@ cffi==1.15.0
 cryptography==35.0.0
 Django==3.2.9
 django-cors-headers==3.10.0
+django-extensions==3.1.5
+django-phone-field==1.8.1
 django-rest-knox==4.1.0
 djangorestframework==3.12.4
 Faker==9.8.2
