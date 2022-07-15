@@ -3,6 +3,8 @@ from typing import List
 from django.db import models
 
 # Create your models here.
+from django.db.models import Q
+
 import accounts.models
 from core.models import Request
 from utils.Singleton import Singleton
@@ -154,17 +156,19 @@ class SystemFeedback(models.Model):
         return self.user
 
 
-class SystemFeedbackCatalogue(Singleton):
+class SystemFeedbackCatalogue(metaclass=Singleton):
     feedbacks = SystemFeedback.objects.all()
 
-    def get_system_feedback_list(self):
-        return self.feedbacks
+    def search(self, query):
+        result = self.feedbacks
+        for field in ['type', 'status']:
+            if query.get(field):
+                result = result.filter(Q(**{field + '__iexact': query[field]}))
+        for field in ['user']:
+            if query.get(field):
+                result = result.filter(Q(**{field + '__iexact': query[field]}))
+        for field in ['has_reply']:
+            if query.get(field):
+                result = result.filter(reply__isnull=not query[field])
 
-    def search_by_type(self, type):
-        pass
-
-    def search_by_status(self, status):
-        pass
-
-    def sort_by_time(self, ascending=True):
-        pass
+        return result
