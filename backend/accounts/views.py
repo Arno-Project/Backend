@@ -1,4 +1,7 @@
+import json
+
 from django.contrib.auth import login
+from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
@@ -10,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import User
+from .models import User, UserCatalogue
 from .serializers import SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
     CustomerFullSerializer, UserFullSerializer
 
@@ -43,10 +46,12 @@ class RegisterView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        print((SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data)
         return Response({
-            'user': (SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data['user'],
+            'normal_user': (SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+                'normal_user'],
             'role': role,
-            'token': AuthToken.objects.create(user.user)[1]
+            'token': AuthToken.objects.create(user.normal_user.user)[1]
         })
 
 
@@ -81,3 +86,14 @@ class MyAccountView(APIView):
             'user': UserFullSerializer(request.user).data,
             'role': request.user.get_role()
         })
+
+
+class UserSearchView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        print(request.GET)
+        users = UserCatalogue().search(json.loads(request.GET.get('q')))
+        serialized = UserFullSerializer(users, many=True)
+        return JsonResponse(serialized.data, safe=False)

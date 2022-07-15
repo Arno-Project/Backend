@@ -21,7 +21,7 @@ runserver:
 down-v:
 	docker-compose down -v
 volume:
-	docker volume inspect arno_postgres_data
+	docker volume inspect backend_postgres_data
 shell:
 	docker-compose exec arno python manage.py shell
 tests:
