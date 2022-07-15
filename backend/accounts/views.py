@@ -1,24 +1,19 @@
 from django.contrib.auth import login
-from django.forms import ValidationError
-from django.views import View
-from rest_framework import response
+from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import APIException
-
-from .models import CompanyManager, TechnicalManager, User, Specialist, Customer
-
-from .serializers import SpecialistRegisterSerializer, CustomerRegisterSerializer, RegisterSerializer, \
-    SpecialistFullSerializer, CustomerFullSerializer, UserFullSerializer
-
-from rest_framework.authtoken.serializers import AuthTokenSerializer
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView
 from rest_framework import generics, permissions, status
+from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.exceptions import APIException
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from django.utils.translation import gettext_lazy as _
+from .models import User
+from .serializers import SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
+    CustomerFullSerializer, UserFullSerializer
+
 
 # Create your views here.
 

@@ -1,44 +1,31 @@
 import datetime
 from typing import List
 
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.db.models import Q
-from django.core.exceptions import ObjectDoesNotExist
-
+from django.utils.translation import gettext_lazy as _
+from model_utils.managers import InheritanceManager
 from phone_field import PhoneField
 
-from core.models import Request
 from utils.Singleton import Singleton
 
 
 class User(AbstractUser):
+    class UserRole(models.TextChoices):
+        CompanyManager = 'CM', _('Company Manager')
+        TechnicalManager = 'TM', _('Technical Manager')
+        Customer = 'C', _('Customer')
+        Specialist = 'S', _('Specialist')
+
     phone = PhoneField(blank=False, null=False, verbose_name=u"شماره تلفن همراه", unique=True)
+    role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
+
+    objects = UserManager()
 
     class Meta:
-        abstract = True
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
-
-    def get_role(self):
-        role = 'customer'
-        try:
-            _ = self.specialist
-            role = 'specialist'
-        except ObjectDoesNotExist:
-            pass
-        try:
-            _ = self.companymanager
-            role = 'companyManager'
-        except ObjectDoesNotExist:
-            pass
-        try:
-            _ = self.technicalmanager
-            role = 'technicalManager'
-        except ObjectDoesNotExist:
-            pass
-
-        return role
 
     @classmethod
     def search(cls, query: dict, is_customer=False, is_specialist=False, is_company_manager=False,
@@ -62,6 +49,9 @@ class User(AbstractUser):
 
         return result
 
+    def get_role(self):
+        return self.role
+
     def get_email(self):
         return self.email
 
@@ -83,7 +73,7 @@ class User(AbstractUser):
 
 class NormalUser(User):
     score = models.IntegerField(default=0)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    objects = InheritanceManager()
 
     def get_score(self):
         return self.score
@@ -98,7 +88,6 @@ class NormalUser(User):
         pass
 
     class Meta:
-        abstract = True
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
 
@@ -112,23 +101,23 @@ class Customer(models.Model):
                        address: str):
         pass
 
-    def delete_request(self, request: "Request"):
+    def delete_request(self, request):
         pass
 
-    def edit_request(self, request: "Request", requested_speciality: "Speciality", requested_date: datetime.datetime,
+    def edit_request(self, request, requested_speciality: "Speciality", requested_date: datetime.datetime,
                      description: str, address: str):
         pass
 
     def select_specialist(self, specialist: "Specialist"):
         pass
 
-    def accept_specialist(self, request: "Request"):
+    def accept_specialist(self, request):
         pass
 
-    def reject_specialist(self, request: "Request"):
+    def reject_specialist(self, request):
         pass
 
-    def submit_feedback(self, request: "Request", feedback: str, score: int):
+    def submit_feedback(self, request, feedback: str, score: int):
         pass
 
     @classmethod
@@ -179,16 +168,16 @@ class Specialist(models.Model):
     def remove_document(self):
         pass
 
-    def accept_request(self, request: "Request"):
+    def accept_request(self, request):
         pass
 
-    def reject_request(self, request: "Request"):
+    def reject_request(self, request):
         pass
 
-    def submit_feedback(self, request: "Request", feedback: str, score: int):
+    def submit_feedback(self, request, feedback: str, score: int):
         pass
 
-    def submit_request_fullfillment(self, request: "Request"):
+    def submit_request_fullfillment(self, request):
         pass
 
     @classmethod
@@ -202,7 +191,6 @@ class Specialist(models.Model):
 
 
 class CompanyManager(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
@@ -215,7 +203,6 @@ class CompanyManager(models.Model):
 
 
 class TechnicalManager(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     @classmethod
     def search(cls, query):

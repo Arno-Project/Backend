@@ -5,13 +5,13 @@ from accounts.models import User, Customer, Specialist, TechnicalManager, Compan
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'phone')
+        fields = ('id', 'username', 'email', 'phone','role')
 
 
 class UserFullSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login')
+        fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login','role')
 
 
 class CustomerSerializer(ModelSerializer):
@@ -72,14 +72,15 @@ class TechnicalManagerSerializer(ModelSerializer):
 class RegisterSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'phone')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'phone','role')
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(
             validated_data['username'], validated_data['email'], validated_data['password'],
             phone=validated_data['phone'],
-            first_name=validated_data['first_name'], last_name=validated_data['last_name'])
+            first_name=validated_data['first_name'], last_name=validated_data['last_name'],
+        role=validated_data['role'])
         user.save()
         return user
 
@@ -89,16 +90,19 @@ class CustomerRegisterSerializer(RegisterSerializer):
         pass
 
     def create(self, validated_data):
+        validated_data['role']='customer'
         user = super().create(validated_data)
         customer = Customer.objects.create(user=user)
         return customer
 
 
 class SpecialistRegisterSerializer(RegisterSerializer):
+
     class Meta(RegisterSerializer.Meta):
         pass
 
     def create(self, validated_data):
+        validated_data['role'] = 'specialist'
         user = super().create(validated_data)
         specialist = Specialist.objects.create(user=user)
         return specialist

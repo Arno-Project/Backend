@@ -151,3 +151,25 @@ class Request(models.Model):
             result = result.filter(requested_date__lte=query.get('date_to'))
 
         return result
+
+
+class RequestCatalogue(Singleton):
+    requests = Request.objects.all()
+
+    def get_requests(self):
+        return self.requests
+
+    def search_by_speciality(self, speciality: "Speciality"):
+        return self.requests.filter(requested_speciality=speciality)
+
+    def search_by_customer(self, customer: "Customer"):
+        return self.requests.filter(customer=customer)
+
+    def search_by_specialist(self, specialist: "Specialist"):
+        return self.requests.filter(specialist=specialist)
+
+    def search_by_status(self, status: str):
+        return self.requests.filter(status=status)
+
+    def sort_by_time(self):
+        return self.requests.order_by('desired_start_time')

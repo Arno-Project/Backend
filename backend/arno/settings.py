@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
     'core.apps.CoreConfig',
+    'feedback.apps.FeedbackConfig',
     'corsheaders',
     'rest_framework',
     'phone_field',
