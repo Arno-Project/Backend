@@ -1,3 +1,5 @@
+include .env
+
 build:
 	docker-compose up --build -d
 up:
@@ -24,3 +26,6 @@ shell:
 	docker-compose exec arno python manage.py shell
 tests:
 	docker-compose exec arno python manage.py test -v 2
+
+drop-table:
+	docker-compose down && docker volume rm backend_postgres_data
