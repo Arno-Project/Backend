@@ -15,7 +15,8 @@ from rest_framework.views import APIView
 
 from .models import User, UserCatalogue
 from .serializers import SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
-    CustomerFullSerializer, UserFullSerializer
+    CustomerFullSerializer, UserFullSerializer, CompanyManagerFullSerializer, \
+    TechnicalManagerFullSerializer
 
 
 # Create your views here.
@@ -92,8 +93,28 @@ class UserSearchView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_class(self, user):
+        if user.role == User.UserRole.Customer[0]:
+            return CustomerFullSerializer
+        elif user.role == User.UserRole.Specialist[0]:
+            return SpecialistFullSerializer
+        elif user.role == User.UserRole.CompanyManager[0]:
+            return CompanyManagerFullSerializer
+        elif user.role == User.UserRole.TechnicalManager[0]:
+            return TechnicalManagerFullSerializer
+
+    def get_complete_user(self, user):
+        if user.role == User.UserRole.Customer[0]:
+            return user.normal_user_user.customer_normal_user
+        elif user.role == User.UserRole.Specialist[0]:
+            return user.normal_user_user.specialist_normal_user
+        elif user.role == User.UserRole.CompanyManager[0]:
+            return user.manager_user_user.company_manager_manager_user
+        elif user.role == User.UserRole.TechnicalManager[0]:
+            return user.manager_user_user.technical_manager_manger_user
+
     def get(self, request):
         print(request.GET)
         users = UserCatalogue().search(json.loads(request.GET.get('q')))
-        serialized = UserFullSerializer(users, many=True)
-        return JsonResponse(serialized.data, safe=False)
+        serialized = [self.get_serializer_class(user)(self.get_complete_user(user)).data for user in users]
+        return JsonResponse(serialized, safe=False)
