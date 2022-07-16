@@ -24,6 +24,7 @@ class User(AbstractUser):
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
 
+
     @classmethod
     def search(cls, query: dict, is_customer=False, is_specialist=False, is_company_manager=False,
                is_technical_manager=False):
@@ -66,12 +67,6 @@ class User(AbstractUser):
 
     def set_active(self, is_active):
         self.is_active = is_active
-
-    def save(self, *args, **kwargs):
-        print(args)
-        print(kwargs)
-        user = super(User, self).save( *args, **kwargs)
-        user.set_password(kwargs["password"])
 
 
 class NormalUser(models.Model):
