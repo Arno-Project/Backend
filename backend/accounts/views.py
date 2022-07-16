@@ -49,9 +49,8 @@ class RegisterView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        print((SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data)
         return Response({
-            'normal_user': (SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+            **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
                 'normal_user'],
             'role': role,
             'token': AuthToken.objects.create(user.normal_user.user)[1]
@@ -61,9 +60,9 @@ class ManagerRegisterView(generics.GenericAPIView):
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
-        if role == 'specialist':
+        if role == User.UserRole.Specialist:
             return SpecialistRegisterSerializer
-        elif role == 'customer':
+        elif role == User.UserRole.Customer:
             return CustomerRegisterSerializer
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
