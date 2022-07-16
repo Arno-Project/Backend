@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
-from knox.views import LoginView as KnoxLoginView
+from knox.views import LoginView as KnoxLoginView, LogoutView as KnoxLogoutView
 from rest_framework import generics, permissions, status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import APIException
@@ -93,6 +93,9 @@ class LoginView(KnoxLoginView):
                 'role': user.get_role()
             })
         return res
+
+class LogoutView(KnoxLogoutView):
+    permission_classes = (permissions.IsAuthenticated,)
 
 
 class MyAccountView(APIView):
