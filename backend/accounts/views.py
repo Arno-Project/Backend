@@ -14,8 +14,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import User, UserCatalogue
-from .serializers import SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
-    CustomerFullSerializer, UserFullSerializer, CompanyManagerFullSerializer, \
+from .serializers import CompanyManagerRegisterSerializer, SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
+    CustomerFullSerializer, TechnicalManagerRegisterSerializer, UserFullSerializer, CompanyManagerFullSerializer, \
     TechnicalManagerFullSerializer
 
 
@@ -38,19 +38,11 @@ class RegisterView(generics.GenericAPIView):
         self.serializer_class = self.get_serializer_class()
 
         serializer = self.get_serializer(data=request.data)
-
-        print(request.data)
-
-        if User.objects.filter(email=request.POST.get('email')).exists():
-            return Response({
-                'email': [_('User with this email address already exists.')]
-            }, status=status.HTTP_400_BAD_REQUEST)
-
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         return Response({
-            **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+            **(SpecialistFullSerializer if role == User.UserRole.Specialist else CustomerFullSerializer)(user).data[
                 'normal_user'],
             'role': role,
             'token': AuthToken.objects.create(user.normal_user.user)[1]
@@ -60,10 +52,10 @@ class ManagerRegisterView(generics.GenericAPIView):
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
-        if role == User.UserRole.Specialist:
-            return SpecialistRegisterSerializer
-        elif role == User.UserRole.Customer:
-            return CustomerRegisterSerializer
+        if role == User.UserRole.CompanyManager:
+            return CompanyManagerRegisterSerializer
+        elif role == User.UserRole.TechnicalManager:
+            return TechnicalManagerRegisterSerializer
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
 
@@ -72,16 +64,11 @@ class ManagerRegisterView(generics.GenericAPIView):
         self.serializer_class = self.get_serializer_class()
 
         serializer = self.get_serializer(data=request.data)
-
-        if User.objects.filter(email=request.data['email']).exists():
-            return Response({
-                'email': [_('User with this email address already exists.')]
-            }, status=status.HTTP_400_BAD_REQUEST)
-
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         return Response({
+            # TODO
             **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
                 'normal_user'],
             'role': role,

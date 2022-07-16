@@ -17,6 +17,7 @@ class User(AbstractUser):
         Customer = 'C', _('Customer')
         Specialist = 'S', _('Specialist')
 
+    email = models.EmailField(unique=True)
     phone = PhoneField(blank=False, null=False, verbose_name=u"شماره تلفن همراه", unique=True)
     role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
 
