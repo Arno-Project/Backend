@@ -156,7 +156,6 @@ class CustomerRegisterSerializer(NormalUserRegisterSerializer):
         return customer
 
 
-
 class SpecialistRegisterSerializer(NormalUserRegisterSerializer):
     class Meta(NormalUserRegisterSerializer.Meta):
         pass
@@ -166,3 +165,35 @@ class SpecialistRegisterSerializer(NormalUserRegisterSerializer):
         normal_user = super().create(validated_data)
         specialist = Specialist.objects.create(normal_user=normal_user)
         return specialist
+
+
+class ManagerRegisterSerializer(RegisterSerializer):
+    class Meta(RegisterSerializer.Meta):
+        pass
+
+    def create(self, validated_data):
+        user = super().create(validated_data)
+        manager_user = ManagerUser.objects.create(user=user)
+        return manager_user
+
+
+class TechnicalManagerRegisterSerializer(ManagerRegisterSerializer):
+    class Meta(ManagerRegisterSerializer.Meta):
+        pass
+
+    def create(self, validated_data):
+        validated_data['role'] = User.UserRole.TechnicalManager[0]
+        manager_user = super().create(validated_data)
+        technical_manager = TechnicalManager.objects.create(manager_user=manager_user)
+        return technical_manager
+
+
+class CompanyManagerRegisterSerializer(ManagerRegisterSerializer):
+    class Meta(ManagerRegisterSerializer.Meta):
+        pass
+
+    def create(self, validated_data):
+        validated_data['role'] = User.UserRole.CompanyManager[0]
+        manager_user = super().create(validated_data)
+        company_manager = CompanyManager.objects.create(manager_user=manager_user)
+        return company_manager

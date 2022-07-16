@@ -67,6 +67,12 @@ class User(AbstractUser):
     def set_active(self, is_active):
         self.is_active = is_active
 
+    def save(self, *args, **kwargs):
+        print(args)
+        print(kwargs)
+        user = super(User, self).save( *args, **kwargs)
+        user.set_password(kwargs["password"])
+
 
 class NormalUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="normal_user_user")

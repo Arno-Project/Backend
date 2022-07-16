@@ -55,6 +55,38 @@ class RegisterView(generics.GenericAPIView):
             'token': AuthToken.objects.create(user.normal_user.user)[1]
         })
 
+class ManagerRegisterView(generics.GenericAPIView):
+
+    def get_serializer_class(self):
+        role = self.kwargs.get('role')
+        if role == 'specialist':
+            return SpecialistRegisterSerializer
+        elif role == 'customer':
+            return CustomerRegisterSerializer
+        else:
+            raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, *args, **kwargs):
+        role = self.kwargs.get('role')
+        self.serializer_class = self.get_serializer_class()
+
+        serializer = self.get_serializer(data=request.data)
+
+        if User.objects.filter(email=request.data['email']).exists():
+            return Response({
+                'email': [_('User with this email address already exists.')]
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        print((SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data)
+        return Response({
+            'normal_user': (SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+                'normal_user'],
+            'role': role,
+            'token': AuthToken.objects.create(user.normal_user.user)[1]
+        })
 
 class LoginView(KnoxLoginView):
     permission_classes = (permissions.AllowAny,)
