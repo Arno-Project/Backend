@@ -83,7 +83,7 @@ class ManagerRegisterView(generics.GenericAPIView):
         user = serializer.save()
 
         return Response({
-            'normal_user': (SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+            **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
                 'normal_user'],
             'role': role,
             'token': AuthToken.objects.create(user.normal_user.user)[1]
