@@ -26,9 +26,9 @@ class RegisterView(generics.GenericAPIView):
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
-        if role == 'specialist':
+        if role == User.UserRole.Specialist:
             return SpecialistRegisterSerializer
-        elif role == 'customer':
+        elif role == User.UserRole.Customer:
             return CustomerRegisterSerializer
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
@@ -39,7 +39,9 @@ class RegisterView(generics.GenericAPIView):
 
         serializer = self.get_serializer(data=request.data)
 
-        if User.objects.filter(email=request.data['email']).exists():
+        print(request.data)
+
+        if User.objects.filter(email=request.POST.get('email')).exists():
             return Response({
                 'email': [_('User with this email address already exists.')]
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -80,7 +82,6 @@ class ManagerRegisterView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        print((SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data)
         return Response({
             'normal_user': (SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
                 'normal_user'],
@@ -97,6 +98,7 @@ class LoginView(KnoxLoginView):
         user = serializer.validated_data['user']
         login(request, user)
 
+        
         res = super(LoginView, self).post(request, format=None)
         if res.status_code == 200:
             return Response({
