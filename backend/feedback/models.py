@@ -155,6 +155,12 @@ class SystemFeedback(models.Model):
     def get_user(self):
         return self.user
 
+    def set_reply(self, reply):
+        self.reply = reply
+
+    def get_reply(self):
+        return self.reply
+
 
 class SystemFeedbackCatalogue(metaclass=Singleton):
     feedbacks = SystemFeedback.objects.all()
