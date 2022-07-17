@@ -6,8 +6,10 @@ from accounts.models import *
 
 class Location(models.Model):
     address = models.TextField(null=False, blank=False)
-    latitude = models.FloatField(null=False, blank=False)
-    longitude = models.FloatField(null=False, blank=False)
+    latitude = models.DecimalField(null=False, blank=False, max_digits=22,
+                                   decimal_places=16)
+    longitude = models.DecimalField(null=False, blank=False, max_digits=22,
+                                    decimal_places=16)
 
     def get_address(self):
         return self.address
