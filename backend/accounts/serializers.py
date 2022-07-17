@@ -1,8 +1,25 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 from accounts.models import User, Customer, Specialist, TechnicalManager, CompanyManager, Speciality, NormalUser, \
     ManagerUser
 
+class FlattenMixin(object):
+    """Flatens the specified related objects in this representation"""
+    def to_representation(self, obj):
+        assert hasattr(self.Meta, 'flatten'), (
+            'Class {serializer_class} missing "Meta.flatten" attribute'.format(
+                serializer_class=self.__class__.__name__
+            )
+        )
+        # Get the current object representation
+        rep = super(FlattenMixin, self).to_representation(obj)
+        # Iterate the specified related objects with their serializer
+        for field, serializer_class in self.Meta.flatten:
+            serializer = serializer_class(context = self.context)
+            objrep = serializer.to_representation(getattr(obj, field))
+            for key in objrep:
+                rep[key] = objrep[key]
+        return rep
 
 class UserSerializer(ModelSerializer):
     class Meta:
@@ -37,7 +54,7 @@ class ManagerUserSerializer(ModelSerializer):
 
     class Meta:
         model = ManagerUser
-        fields = ('user')
+        fields = ('user',)
 
 
 class ManagerUserFullSerializer(ModelSerializer):
@@ -45,15 +62,21 @@ class ManagerUserFullSerializer(ModelSerializer):
 
     class Meta:
         model = ManagerUser
-        fields = ('user')
+        fields = ('user',)
 
 
-class CustomerSerializer(ModelSerializer):
-    normal_user = NormalUserSerializer()
-
+class CustomerSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = Customer
-        fields = ('id', 'normal_user')
+        fields = ('id',)
+        flatten = [ ('normal_user', NormalUserSerializer) ]
+
+
+class CustomerFullSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ('id', )
+        flatten = [ ('normal_user', NormalUserSerializer) ]
 
 
 class SpecialitySerializer(ModelSerializer):
@@ -62,61 +85,51 @@ class SpecialitySerializer(ModelSerializer):
         fields = ('id', 'name')
 
 
-class CustomerFullSerializer(ModelSerializer):
-    normal_user = NormalUserFullSerializer()
-
-    class Meta:
-        model = Customer
-        fields = ('id', 'normal_user')
-
-
-class SpecialistSerializer(ModelSerializer):
-    normal_user = NormalUserSerializer()
+class SpecialistSerializer(FlattenMixin, ModelSerializer):
     speciality = SpecialitySerializer(read_only=True, many=True)
 
     class Meta:
         model = Specialist
         fields = ('id', 'user', 'speciality')
+        flatten = [ ('normal_user', NormalUserSerializer) ]
 
 
-class SpecialistFullSerializer(ModelSerializer):
-    normal_user = NormalUserFullSerializer()
-
+class SpecialistFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = Specialist
-        fields = ('id', 'normal_user')
+        fields = ('id', )
+        flatten = [ ('normal_user', NormalUserSerializer) ]
 
 
-class CompanyManagerSerializer(ModelSerializer):
-    manager_user = ManagerUserSerializer()
+class CompanyManagerSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
+        model = CompanyManager
+        fields = ('id', )
+        flatten = [ ('manager_user', ManagerUserSerializer) ]
+
+
+
+class CompanyManagerFullSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
+        model = CompanyManager
+        fields = ('id',)
+        flatten = [ ('manager_user', ManagerUserSerializer) ]
+
+
+class TechnicalManagerFullSerializer(FlattenMixin, ModelSerializer):
 
     class Meta:
         model = CompanyManager
-        fields = ('id', 'manager_user')
+        fields = ('id',)
+        flatten = [ ('manager_user', ManagerUserSerializer) ]
 
 
-class CompanyManagerFullSerializer(ModelSerializer):
-    manager_user = ManagerUserFullSerializer()
-
-    class Meta:
-        model = CompanyManager
-        fields = ('id', 'manager_user')
-
-
-class TechnicalManagerFullSerializer(ModelSerializer):
-    manager_user = ManagerUserFullSerializer()
-
-    class Meta:
-        model = CompanyManager
-        fields = ('id', 'manager_user')
-
-
-class TechnicalManagerSerializer(ModelSerializer):
-    manager_user = ManagerUserSerializer()
+class TechnicalManagerSerializer(FlattenMixin, ModelSerializer):
 
     class Meta:
         model = TechnicalManager
-        fields = ('id', 'manager_user')
+        fields = ('id',)
+        flatten = [ ('manager_user', ManagerUserSerializer) ]
 
 
 class RegisterSerializer(ModelSerializer):

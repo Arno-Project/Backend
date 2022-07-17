@@ -231,6 +231,10 @@ class UserCatalogue(metaclass=Singleton):
 
     def search(self, query):
         result = self.users
+        
+        if not query:
+            return result
+
         for field in ['first_name', 'last_name', 'phone']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
@@ -239,7 +243,7 @@ class UserCatalogue(metaclass=Singleton):
         # filter User objects that exist in Customer Table
         if query.get('role'):
             result = result.filter(Q(role__icontains=query['role']))
-            if query['role'] == 'specialist':
+            if query['role'] == User.UserRole.Specialist:
                 for field in ['speciality']:
                     if query.get(field):
                         result = result.filter(Q(**{'specialist__' + field + '__icontains': query[field]}))
