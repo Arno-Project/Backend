@@ -175,6 +175,7 @@ class Specialist(models.Model):
     normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='specialist_normal_user')
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
+    is_validated = models.BooleanField(default=False)
 
     def add_speciality(self, speciality: "Speciality"):
         pass

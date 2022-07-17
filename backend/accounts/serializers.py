@@ -90,15 +90,12 @@ class SpecialistSerializer(FlattenMixin, ModelSerializer):
 
     class Meta:
         model = Specialist
-        fields = ('id', 'speciality')
+        fields = ('id', 'speciality', 'is_validated')
         flatten = [ ('normal_user', NormalUserSerializer) ]
 
 
-class SpecialistFullSerializer(FlattenMixin, ModelSerializer):
-    speciality = SpecialitySerializer(read_only=True, many=True)
-    class Meta:
-        model = Specialist
-        fields = ('id', )
+class SpecialistFullSerializer(SpecialistSerializer):
+    class Meta(SpecialistSerializer.Meta):
         flatten = [ ('normal_user', NormalUserFullSerializer) ]
 
 
