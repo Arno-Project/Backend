@@ -10,13 +10,13 @@ from knox.views import LoginView as KnoxLoginView, LogoutView as KnoxLogoutView
 from rest_framework import generics, permissions, status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import APIException
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.serializers import ModelSerializer
 
 from utils.permissions import PermissionFactory
-from .models import User, UserCatalogue
+from .models import User, UserCatalogue, Speciality
 from .serializers import CompanyManagerRegisterSerializer, CompanyManagerSerializer, CustomerSerializer, \
     SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
     CustomerFullSerializer, SpecialistSerializer, TechnicalManagerRegisterSerializer, TechnicalManagerSerializer, \
@@ -146,9 +146,25 @@ class AccountsView(APIView):
         return JsonResponse({'users': serialized}, safe=False)
 
 
-class SpecialityCreateView(APIView):
+class SpecialityView(APIView):
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+        return [permission() for permission in permission_classes]
+
     authentication_classes = [TokenAuthentication]
-    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+
+    def get(self, request):
+        id_set = set(request.GET.getlist('id'))
+        if id_set:
+            specialities = Speciality.objects.filter(id__in=id_set)
+        else:
+            specialities = Speciality.objects.all()
+        serialized = SpecialitySerializer(specialities, many=True).data
+        return JsonResponse({'specialities': serialized}, safe=False)
 
     def post(self, request, *args, **kwargs):
         serializer = SpecialitySerializer(data=request.data)
@@ -157,5 +173,3 @@ class SpecialityCreateView(APIView):
         return Response({
             'speciality': SpecialitySerializer(speciality).data
         })
-
-
