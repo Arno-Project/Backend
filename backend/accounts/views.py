@@ -1,4 +1,5 @@
 import json
+from typing import Type
 
 from django.contrib.auth import login
 from django.http import JsonResponse
@@ -14,10 +15,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.serializers import ModelSerializer
 
+from utils.permissions import PermissionFactory
 from .models import User, UserCatalogue
-from .serializers import CompanyManagerRegisterSerializer, CompanyManagerSerializer, CustomerSerializer, SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
-    CustomerFullSerializer, SpecialistSerializer, TechnicalManagerRegisterSerializer, TechnicalManagerSerializer, UserFullSerializer, CompanyManagerFullSerializer, \
-    TechnicalManagerFullSerializer
+from .serializers import CompanyManagerRegisterSerializer, CompanyManagerSerializer, CustomerSerializer, \
+    SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
+    CustomerFullSerializer, SpecialistSerializer, TechnicalManagerRegisterSerializer, TechnicalManagerSerializer, \
+    UserFullSerializer, CompanyManagerFullSerializer, \
+    TechnicalManagerFullSerializer, SpecialitySerializer
 
 
 # Create your views here.
@@ -49,6 +53,7 @@ class RegisterView(generics.GenericAPIView):
             'token': AuthToken.objects.create(user.normal_user.user)[1]
         })
 
+
 class ManagerRegisterView(generics.GenericAPIView):
 
     def get_serializer_class(self):
@@ -76,6 +81,7 @@ class ManagerRegisterView(generics.GenericAPIView):
             'token': AuthToken.objects.create(user.normal_user.user)[1]
         })
 
+
 class LoginView(KnoxLoginView):
     permission_classes = (permissions.AllowAny,)
 
@@ -85,7 +91,6 @@ class LoginView(KnoxLoginView):
         user = serializer.validated_data['user']
         login(request, user)
 
-        
         res = super(LoginView, self).post(request, format=None)
         if res.status_code == 200:
             return Response({
@@ -94,6 +99,7 @@ class LoginView(KnoxLoginView):
                 'role': user.get_role()
             })
         return res
+
 
 class LogoutView(KnoxLogoutView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -117,7 +123,12 @@ class AccountsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self, user, manager) -> ModelSerializer:
+    def get_serializer_class(self, user, manager) -> Type[
+        CustomerFullSerializer | CustomerSerializer |
+        SpecialistFullSerializer | SpecialistSerializer |
+        CompanyManagerFullSerializer | CompanyManagerSerializer |
+        TechnicalManagerFullSerializer | TechnicalManagerSerializer
+        ]:
         if user.role == User.UserRole.Customer:
             return CustomerFullSerializer if manager else CustomerSerializer
         elif user.role == User.UserRole.Specialist:
@@ -133,3 +144,18 @@ class AccountsView(APIView):
         users = UserCatalogue().search(query_dict)
         serialized = [self.get_serializer_class(user, manager)(user.full_user).data for user in users]
         return JsonResponse({'users': serialized}, safe=False)
+
+
+class SpecialityCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+
+    def post(self, request, *args, **kwargs):
+        serializer = SpecialitySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        speciality = serializer.save()
+        return Response({
+            'speciality': SpecialitySerializer(speciality).data
+        })
+
+
