@@ -24,7 +24,7 @@ class FlattenMixin(object):
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'phone', 'role')
+        fields = ('id', 'username', 'first_name', 'last_name', 'role')
 
 
 class UserFullSerializer(ModelSerializer):
@@ -82,7 +82,7 @@ class CustomerFullSerializer(FlattenMixin, ModelSerializer):
 class SpecialitySerializer(ModelSerializer):
     class Meta:
         model = Speciality
-        fields = ('id', 'name')
+        fields = '__all__'
 
 
 class SpecialistSerializer(FlattenMixin, ModelSerializer):
@@ -90,15 +90,16 @@ class SpecialistSerializer(FlattenMixin, ModelSerializer):
 
     class Meta:
         model = Specialist
-        fields = ('id', 'user', 'speciality')
+        fields = ('id', 'speciality')
         flatten = [ ('normal_user', NormalUserSerializer) ]
 
 
 class SpecialistFullSerializer(FlattenMixin, ModelSerializer):
+    speciality = SpecialitySerializer(read_only=True, many=True)
     class Meta:
         model = Specialist
         fields = ('id', )
-        flatten = [ ('normal_user', NormalUserSerializer) ]
+        flatten = [ ('normal_user', NormalUserFullSerializer) ]
 
 
 class CompanyManagerSerializer(FlattenMixin, ModelSerializer):

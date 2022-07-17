@@ -15,8 +15,8 @@ from rest_framework.views import APIView
 from rest_framework.serializers import ModelSerializer
 
 from .models import User, UserCatalogue
-from .serializers import CompanyManagerRegisterSerializer, SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
-    CustomerFullSerializer, TechnicalManagerRegisterSerializer, UserFullSerializer, CompanyManagerFullSerializer, \
+from .serializers import CompanyManagerRegisterSerializer, CompanyManagerSerializer, CustomerSerializer, SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
+    CustomerFullSerializer, SpecialistSerializer, TechnicalManagerRegisterSerializer, TechnicalManagerSerializer, UserFullSerializer, CompanyManagerFullSerializer, \
     TechnicalManagerFullSerializer
 
 
@@ -117,30 +117,19 @@ class AccountsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self, user) -> ModelSerializer:
+    def get_serializer_class(self, user, manager) -> ModelSerializer:
         if user.role == User.UserRole.Customer:
-            return CustomerFullSerializer
+            return CustomerFullSerializer if manager else CustomerSerializer
         elif user.role == User.UserRole.Specialist:
-            return SpecialistFullSerializer
+            return SpecialistFullSerializer if manager else SpecialistSerializer
         elif user.role == User.UserRole.CompanyManager:
-            return CompanyManagerFullSerializer
+            return CompanyManagerFullSerializer if manager else CompanyManagerSerializer
         elif user.role == User.UserRole.TechnicalManager:
-            return TechnicalManagerFullSerializer
-
-    def get_complete_user(self, user) -> User:
-        print(user.role)
-        if user.role == User.UserRole.Customer:
-            return user.normal_user_user.customer_normal_user
-        elif user.role == User.UserRole.Specialist:
-            return user.normal_user_user.specialist_normal_user
-        elif user.role == User.UserRole.CompanyManager:
-            return user.manager_user_user.company_manager_manager_user
-        elif user.role == User.UserRole.TechnicalManager:
-            return user.manager_user_user.technical_manager_manger_user
+            return TechnicalManagerFullSerializer if manager else TechnicalManagerSerializer
 
     def get(self, request):
+        manager = request.user.is_manager
         query_dict = request.GET
         users = UserCatalogue().search(query_dict)
-        serialized = [self.get_serializer_class(user)(self.get_complete_user(user)).data for user in users 
-            if self.get_serializer_class(user)]
+        serialized = [self.get_serializer_class(user, manager)(user.full_user).data for user in users]
         return JsonResponse({'users': serialized}, safe=False)

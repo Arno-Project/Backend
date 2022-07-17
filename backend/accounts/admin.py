@@ -10,7 +10,7 @@ admin.site.register(models.NormalUser)
 admin.site.register(models.ManagerUser)
 admin.site.register(models.Customer)
 admin.site.register(models.Specialist)
-
+admin.site.register(models.Speciality)
 
 @admin.register(models.User)
 class CustomUserAdmin(UserAdmin):

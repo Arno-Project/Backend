@@ -21,6 +21,21 @@ class User(AbstractUser):
     phone = PhoneField(blank=False, null=False, verbose_name=u"شماره تلفن همراه", unique=True)
     role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
 
+    @property
+    def is_manager(self):
+        return self.role in [self.UserRole.CompanyManager, self.UserRole.TechnicalManager] 
+
+    @property
+    def full_user(self):
+        if self.role == User.UserRole.Customer:
+            return self.normal_user_user.customer_normal_user
+        elif self.role == User.UserRole.Specialist:
+            return self.normal_user_user.specialist_normal_user
+        elif self.role == User.UserRole.CompanyManager:
+            return self.manager_user_user.company_manager_manager_user
+        elif self.role == User.UserRole.TechnicalManager:
+            return self.manager_user_user.technical_manager_manger_user
+
     class Meta:
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
