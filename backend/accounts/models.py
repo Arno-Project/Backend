@@ -23,7 +23,7 @@ class User(AbstractUser):
 
     @property
     def is_manager(self):
-        return self.role in [self.UserRole.CompanyManager, self.UserRole.TechnicalManager] 
+        return self.role in [self.UserRole.CompanyManager, self.UserRole.TechnicalManager]
 
     @property
     def full_user(self):
@@ -39,7 +39,6 @@ class User(AbstractUser):
     class Meta:
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
-
 
     @classmethod
     def search(cls, query: dict, is_customer=False, is_specialist=False, is_company_manager=False,
@@ -178,10 +177,13 @@ class Specialist(models.Model):
     is_validated = models.BooleanField(default=False)
 
     def add_speciality(self, speciality: "Speciality"):
-        pass
+        self.speciality.add(speciality)
 
     def remove_speciality(self, speciality: "Speciality"):
-        pass
+        self.speciality.remove(speciality)
+
+    def get_speciality(self):
+        return self.speciality
 
     def upload_document(self, document):
         pass
@@ -247,10 +249,12 @@ class UserCatalogue(metaclass=Singleton):
 
     def search(self, query):
         result = self.users
-        
+
         if not query:
             return result
-
+        for field in ['id']:
+            if query.get(field):
+                result = result.filter(id__exact=query[field])
         for field in ['first_name', 'last_name', 'phone']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))

@@ -1,9 +1,7 @@
-import json
 from typing import Type
 
 from django.contrib.auth import login
-from django.http import JsonResponse
-from django.utils.translation import gettext_lazy as _
+from django.http import JsonResponse, HttpResponse
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView, LogoutView as KnoxLogoutView
@@ -13,10 +11,9 @@ from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.serializers import ModelSerializer
 
 from utils.permissions import PermissionFactory
-from .models import User, UserCatalogue, Speciality
+from .models import User, UserCatalogue, Speciality, Specialist
 from .serializers import CompanyManagerRegisterSerializer, CompanyManagerSerializer, CustomerSerializer, \
     SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
     CustomerFullSerializer, SpecialistSerializer, TechnicalManagerRegisterSerializer, TechnicalManagerSerializer, \
@@ -48,13 +45,14 @@ class RegisterView(generics.GenericAPIView):
 
         return Response({
             **(SpecialistFullSerializer if role == User.UserRole.Specialist else CustomerFullSerializer)(user).data[
-                'normal_user'],
+                'user'],
             'role': role,
             'token': AuthToken.objects.create(user.normal_user.user)[1]
         })
 
 
 class ManagerRegisterView(generics.GenericAPIView):
+    # TODO
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
@@ -76,7 +74,7 @@ class ManagerRegisterView(generics.GenericAPIView):
         return Response({
             # TODO
             **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
-                'normal_user'],
+                'user'],
             'role': role,
             'token': AuthToken.objects.create(user.normal_user.user)[1]
         })
@@ -173,3 +171,36 @@ class SpecialityView(APIView):
         return Response({
             'speciality': SpecialitySerializer(speciality).data
         })
+
+
+class SpecialityAddRemoveView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class() | PermissionFactory(
+        User.UserRole.TechnicalManager).get_permission_class() | PermissionFactory(
+        User.UserRole.Specialist).get_permission_class()]
+
+    def add_remove_speciality(self, request, is_add, *args, **kwargs):
+        print(request.data)
+        speciality_id = request.data.get('speciality_id')
+        if 'specialist_id' not in request.POST:
+            if request.user.role == User.UserRole.Specialist:
+                specialist_id = request.user.id
+            else:
+                raise APIException("Invalid Request", status.HTTP_400_BAD_REQUEST)
+        else:
+            specialist_id = request.data.get('specialist_id')
+        speciality = Speciality.objects.get(pk=speciality_id)
+        specialist = UserCatalogue().search(query={'id': specialist_id, 'role': "S"})[
+            0].normal_user_user.specialist_normal_user
+        # specialist=Specialist.objects.filter(normal_user__user_id=specialist_id).first()
+        if is_add:
+            specialist.add_speciality(speciality)
+        else:
+            specialist.remove_speciality(speciality)
+        return HttpResponse('OK', status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        return self.add_remove_speciality(request, True, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.add_remove_speciality(request, False, *args, **kwargs)
