@@ -13,12 +13,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.permissions import PermissionFactory
-from .models import User, UserCatalogue, Speciality, Specialist
-from .serializers import CompanyManagerRegisterSerializer, CompanyManagerSerializer, CustomerSerializer, \
-    SpecialistRegisterSerializer, CustomerRegisterSerializer, SpecialistFullSerializer, \
-    CustomerFullSerializer, SpecialistSerializer, TechnicalManagerRegisterSerializer, TechnicalManagerSerializer, \
+from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
+    TechnicalManager
+from .serializers import CompanyManagerSerializer, CustomerSerializer, \
+    SpecialistFullSerializer, \
+    CustomerFullSerializer, SpecialistSerializer, TechnicalManagerSerializer, \
     UserFullSerializer, CompanyManagerFullSerializer, \
-    TechnicalManagerFullSerializer, SpecialitySerializer
+    TechnicalManagerFullSerializer, SpecialitySerializer, RegisterSerializerFactory
 
 
 # Create your views here.
@@ -29,9 +30,9 @@ class RegisterView(generics.GenericAPIView):
     def get_serializer_class(self):
         role = self.kwargs.get('role')
         if role == User.UserRole.Specialist:
-            return SpecialistRegisterSerializer
+            return RegisterSerializerFactory(Specialist, NormalUser).get_serializer()
         elif role == User.UserRole.Customer:
-            return CustomerRegisterSerializer
+            return RegisterSerializerFactory(Specialist, NormalUser).get_serializer()
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
 
@@ -57,9 +58,9 @@ class ManagerRegisterView(generics.GenericAPIView):
     def get_serializer_class(self):
         role = self.kwargs.get('role')
         if role == User.UserRole.CompanyManager:
-            return CompanyManagerRegisterSerializer
+            return RegisterSerializerFactory(CompanyManager, ManagerUser).get_serializer()
         elif role == User.UserRole.TechnicalManager:
-            return TechnicalManagerRegisterSerializer
+            return RegisterSerializerFactory(TechnicalManager, ManagerUser).get_serializer()
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
 
