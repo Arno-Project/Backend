@@ -4,7 +4,6 @@ from accounts.serializers import SpecialistSerializer, CustomerSerializer, Speci
 from core.models import Request, Location
 
 
-
 class LocationSerializer(ModelSerializer):
     class Meta:
         model = Location
@@ -19,10 +18,12 @@ class RequestSerializer(ModelSerializer):
 
     class Meta:
         model = Request
-        fields = ('id', 'specialist', 'customer', 'location', 'description', 'desired_start_time', 'requested_speciality')
+        fields = (
+        'id', 'specialist', 'customer', 'location', 'description', 'desired_start_time', 'requested_speciality',
+        'status')
+
 
 class RequestSubmitSerializer(ModelSerializer):
     class Meta:
         model = Request
         fields = ('id', 'customer', 'location', 'description', 'desired_start_time', 'requested_speciality')
-

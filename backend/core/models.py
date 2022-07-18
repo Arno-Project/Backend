@@ -130,6 +130,10 @@ class Request(models.Model):
         self.specialist = None
         self.save()
 
+    def cancel(self):
+        self.status = Request.RequestStatus.CANCELED
+        self.save()
+
     @classmethod
     def search(cls, query: dict):
         result = cls.objects
