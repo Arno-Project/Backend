@@ -4,17 +4,25 @@ from accounts.serializers import SpecialistSerializer, CustomerSerializer, Speci
 from core.models import Request, Location
 
 
-class RequestSerializer(ModelSerializer):
-    specialist = SpecialistSerializer()
-    customer = CustomerSerializer()
-    requested_speciality = SpecialitySerializer()
-
-    class Meta:
-        model = Request
-        fields = ('id', 'specialist', 'customer', 'description', 'requested_date', 'requested_speciality')
-
 
 class LocationSerializer(ModelSerializer):
     class Meta:
         model = Location
         fields = '__all__'
+
+
+class RequestSerializer(ModelSerializer):
+    specialist = SpecialistSerializer()
+    customer = CustomerSerializer()
+    requested_speciality = SpecialitySerializer()
+    location = LocationSerializer()
+
+    class Meta:
+        model = Request
+        fields = ('id', 'specialist', 'customer', 'location', 'description', 'desired_start_time', 'requested_speciality')
+
+class RequestSubmitSerializer(ModelSerializer):
+    class Meta:
+        model = Request
+        fields = ('id', 'customer', 'location', 'description', 'desired_start_time', 'requested_speciality')
+
