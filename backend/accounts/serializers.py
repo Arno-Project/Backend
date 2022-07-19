@@ -130,7 +130,7 @@ class TechnicalManagerSerializer(FlattenMixin, ModelSerializer):
         flatten = [('manager_user', ManagerUserSerializer)]
 
 
-    class RegisterSerializerFactory:
+class RegisterSerializerFactory:
     def __init__(self, concrete_class, middle_class):
         self.concrete_class = concrete_class
         self.middle_class = middle_class
