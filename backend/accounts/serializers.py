@@ -130,22 +130,6 @@ class TechnicalManagerSerializer(FlattenMixin, ModelSerializer):
         flatten = [('manager_user', ManagerUserSerializer)]
 
 
-class RegisterSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'phone')
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            validated_data['username'], validated_data['email'], validated_data['password'],
-            phone=validated_data['phone'],
-            first_name=validated_data['first_name'], last_name=validated_data['last_name'],
-            role=validated_data['role'])
-        user.save()
-        return user
-
-
 class RegisterSerializerFactory:
     def __init__(self, concrete_class, middle_class):
         self.concrete_class = concrete_class
