@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from utils.permissions import PermissionFactory
 from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
-    TechnicalManager
+    TechnicalManager, Customer
 from .serializers import CompanyManagerSerializer, CustomerSerializer, \
     SpecialistFullSerializer, \
     CustomerFullSerializer, SpecialistSerializer, TechnicalManagerSerializer, \
@@ -32,7 +32,7 @@ class RegisterView(generics.GenericAPIView):
         if role == User.UserRole.Specialist:
             return RegisterSerializerFactory(Specialist, NormalUser).get_serializer()
         elif role == User.UserRole.Customer:
-            return RegisterSerializerFactory(Specialist, NormalUser).get_serializer()
+            return RegisterSerializerFactory(Customer, NormalUser).get_serializer()
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
 
