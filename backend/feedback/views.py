@@ -19,8 +19,9 @@ class SubmitSystemFeedbackView(APIView):
 
     def post(self, request, *args, **kwargs):
         data = {
-            'user': request.user.id,
-            'text': request.data['text']
+            'user': request.user.normal_user_user.id,
+            'text': request.data['text'],
+            'type': request.data.get('type', "O")
         }
         serializer = SystemFeedbackSerializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -45,9 +46,9 @@ class SubmitSystemFeedbackReplyView(APIView):
 
     def post(self, request, *args, **kwargs):
         system_feedback_id = request.data['system_feedback']
-        system_feedback : SystemFeedback = SystemFeedback.objects.get(pk=system_feedback_id)
+        system_feedback: SystemFeedback = SystemFeedback.objects.get(pk=system_feedback_id)
         data = {
-            'user': request.user.id,
+            'user': request.user.manager_user_user.technical_manager_user.id,
             'text': request.data['text'],
 
         }
