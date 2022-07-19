@@ -12,7 +12,7 @@ from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySe
 from utils.permissions import PermissionFactory
 
 
-class SubmitSystemFeeedbackView(APIView):
+class SubmitSystemFeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class() | PermissionFactory(
         User.UserRole.Specialist).get_permission_class()]
@@ -28,7 +28,7 @@ class SubmitSystemFeeedbackView(APIView):
         return JsonResponse(serializer.data)
 
 
-class SearchSystemFeeedbackView(APIView):
+class SearchSystemFeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
