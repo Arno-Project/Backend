@@ -48,7 +48,7 @@ class SubmitSystemFeedbackReplyView(APIView):
         system_feedback_id = request.data['system_feedback']
         system_feedback: SystemFeedback = SystemFeedback.objects.get(pk=system_feedback_id)
         data = {
-            'user': request.user.manager_user_user.technical_manager_user.id,
+            'user': request.user.manager_user_user.technical_manager_manger_user.id,
             'text': request.data['text'],
 
         }
