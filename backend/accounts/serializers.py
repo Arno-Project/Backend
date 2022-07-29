@@ -1,104 +1,174 @@
-from rest_framework.serializers import ModelSerializer
-from accounts.models import User, Customer, Specialist, TechnicalManager, CompanyManager, Speciality
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
+
+from accounts.models import User, Customer, Specialist, TechnicalManager, CompanyManager, Speciality, NormalUser, \
+    ManagerUser
+
+
+class FlattenMixin(object):
+    """Flatens the specified related objects in this representation"""
+
+    def to_representation(self, obj):
+        assert hasattr(self.Meta, 'flatten'), (
+            'Class {serializer_class} missing "Meta.flatten" attribute'.format(
+                serializer_class=self.__class__.__name__
+            )
+        )
+        # Get the current object representation
+        rep = super(FlattenMixin, self).to_representation(obj)
+        # Iterate the specified related objects with their serializer
+        for field, serializer_class in self.Meta.flatten:
+            serializer = serializer_class(context=self.context)
+            objrep = serializer.to_representation(getattr(obj, field))
+            for key in objrep:
+                rep[key] = objrep[key]
+        return rep
 
 
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'phone')
+        fields = ('id', 'username', 'first_name', 'last_name', 'role')
 
 
 class UserFullSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login')
+        fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login', 'role')
 
 
-class CustomerSerializer(ModelSerializer):
+class NormalUserSerializer(ModelSerializer):
     user = UserSerializer()
 
     class Meta:
+        model = NormalUser
+        fields = ('score', 'user')
+
+
+class NormalUserFullSerializer(ModelSerializer):
+    user = UserFullSerializer()
+
+    class Meta:
+        model = NormalUser
+        fields = ('score', 'user')
+
+
+class ManagerUserSerializer(ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = ManagerUser
+        fields = ('user',)
+
+
+class ManagerUserFullSerializer(ModelSerializer):
+    user = UserFullSerializer()
+
+    class Meta:
+        model = ManagerUser
+        fields = ('user',)
+
+
+class CustomerSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
         model = Customer
-        fields = ('id', 'user')
+        fields = ('id',)
+        flatten = [('normal_user', NormalUserSerializer)]
+
+
+class CustomerFullSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ('id',)
+        flatten = [('normal_user', NormalUserSerializer)]
 
 
 class SpecialitySerializer(ModelSerializer):
     class Meta:
         model = Speciality
-        fields = ('id', 'name')
+        fields = '__all__'
 
 
-class CustomerFullSerializer(ModelSerializer):
-    user = UserFullSerializer()
-
-    class Meta:
-        model = Customer
-        fields = ('id', 'user')
-
-
-class SpecialistSerializer(ModelSerializer):
-    user = UserSerializer()
-    speciality = SpecialitySerializer()
+class SpecialistSerializer(FlattenMixin, ModelSerializer):
+    speciality = SpecialitySerializer(read_only=True, many=True)
 
     class Meta:
         model = Specialist
-        fields = ('id', 'user','speciality')
+        fields = ('id', 'speciality', 'is_validated')
+        flatten = [('normal_user', NormalUserSerializer)]
 
 
-class SpecialistFullSerializer(ModelSerializer):
-    user = UserFullSerializer()
-
-    class Meta:
-        model = Specialist
-        fields = ('id', 'user')
+class SpecialistFullSerializer(SpecialistSerializer):
+    class Meta(SpecialistSerializer.Meta):
+        flatten = [('normal_user', NormalUserFullSerializer)]
 
 
-class CompanyManagerSerializer(ModelSerializer):
-    user = UserSerializer()
-
+class CompanyManagerSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = CompanyManager
-        fields = ('id', 'user')
+        fields = ('id',)
+        flatten = [('manager_user', ManagerUserSerializer)]
 
 
-class TechnicalManagerSerializer(ModelSerializer):
-    user = UserSerializer()
+class CompanyManagerFullSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
+        model = CompanyManager
+        fields = ('id',)
+        flatten = [('manager_user', ManagerUserSerializer)]
 
+
+class TechnicalManagerFullSerializer(FlattenMixin, ModelSerializer):
+    class Meta:
+        model = CompanyManager
+        fields = ('id',)
+        flatten = [('manager_user', ManagerUserSerializer)]
+
+
+class TechnicalManagerSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = TechnicalManager
-        fields = ('id', 'user')
+        fields = ('id',)
+        flatten = [('manager_user', ManagerUserSerializer)]
 
 
-class RegisterSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'phone')
-        extra_kwargs = {'password': {'write_only': True}}
+class RegisterSerializerFactory:
+    def __init__(self, concrete_class, middle_class):
+        self.concrete_class = concrete_class
+        self.middle_class = middle_class
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            validated_data['username'], validated_data['email'], validated_data['password'],
-            phone=validated_data['phone'],
-            first_name=validated_data['first_name'], last_name=validated_data['last_name'])
-        user.save()
-        return user
+    def get_serializer(self):
+        concrete_class = self.concrete_class
+        middle_class = self.middle_class
+        role_mapping = {
+            Customer: User.UserRole.Customer[0],
+            Specialist: User.UserRole.Specialist[0],
+            CompanyManager: User.UserRole.CompanyManager[0],
+            TechnicalManager: User.UserRole.TechnicalManager[0]
+        }
+
+        class Serializer(ModelSerializer):
+            class Meta:
+                model = User
+                fields = ('id', 'username', 'email', 'first_name', 'last_name', 'password', 'phone')
+                extra_kwargs = {'password': {'write_only': True}}
+
+            def create(self, validated_data):
+                user = User.objects.create_user(
+                    validated_data['username'], validated_data['email'], validated_data['password'],
+                    phone=validated_data['phone'],
+                    first_name=validated_data['first_name'], last_name=validated_data['last_name'],
+                    role=role_mapping[concrete_class])
+                user.save()
+                middle_user = middle_class.objects.create(user=user)
+                middle_user.save()
+                if concrete_class == Customer or concrete_class == Specialist:
+                    concrete_user = concrete_class.objects.create(normal_user=middle_user)
+                elif concrete_class == CompanyManager or concrete_class == TechnicalManager:
+                    concrete_user = concrete_class.objects.create(manager_user=middle_user)
+                else:
+                    raise Exception("Unknown user type")
+                concrete_user.save()
+                return concrete_user
+
+        return Serializer
 
 
-class CustomerRegisterSerializer(RegisterSerializer):
-    class Meta(RegisterSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        user = super().create(validated_data)
-        customer = Customer.objects.create(user=user)
-        return customer
-
-
-class SpecialistRegisterSerializer(RegisterSerializer):
-    class Meta(RegisterSerializer.Meta):
-        pass
-
-    def create(self, validated_data):
-        user = super().create(validated_data)
-        specialist = Specialist.objects.create(user=user)
-        return specialist
