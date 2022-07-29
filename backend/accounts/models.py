@@ -88,6 +88,9 @@ class NormalUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="normal_user_user")
     score = models.IntegerField(default=0)
 
+    def __str__(self):
+        return self.user.__str__()
+
     def get_score(self):
         return self.score
 
@@ -108,6 +111,8 @@ class NormalUser(models.Model):
 class Customer(models.Model):
     normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='customer_normal_user')
 
+    def __str__(self):
+        return self.normal_user.__str__()
     class Meta:
         verbose_name = u"مشتری"
         verbose_name_plural = u"مشتریان"
@@ -134,7 +139,7 @@ class Customer(models.Model):
 
     def submit_feedback(self, request, feedback: str, score: int):
         pass
-
+        
     @classmethod
     def search(cls, query):
         result = User.search(query, is_customer=True)
@@ -145,7 +150,7 @@ class Customer(models.Model):
 class Speciality(models.Model):
     title = models.CharField(max_length=100, verbose_name=u"نام تخصص")
     description = models.TextField(verbose_name=u"توضیحات")
-
+    
     def get_title(self):
         return self.title
 
@@ -157,7 +162,7 @@ class Speciality(models.Model):
 
     def set_description(self, description):
         self.description = description
-
+        
     @classmethod
     def search(cls, query):
         result = cls.objects
@@ -175,7 +180,10 @@ class Specialist(models.Model):
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
     is_validated = models.BooleanField(default=False)
-
+    
+    def __str__(self):
+        return self.normal_user.__str__()
+        
     def add_speciality(self, speciality: "Speciality"):
         self.speciality.add(speciality)
 
@@ -216,10 +224,15 @@ class Specialist(models.Model):
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
 
+    def __str__(self):
+        return self.user.__str__()
 
 class CompanyManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
                                         related_name='company_manager_manager_user')
+
+    def __str__(self):
+        return self.manager_user.__str__()
 
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
@@ -234,6 +247,9 @@ class CompanyManager(models.Model):
 class TechnicalManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
                                         related_name='technical_manager_manger_user')
+
+    def __str__(self):
+        return self.manager_user.__str__()
 
     @classmethod
     def search(cls, query):
