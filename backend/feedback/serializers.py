@@ -2,9 +2,10 @@ from accounts import serializers
 from feedback.models import SystemFeedback, SystemFeedbackReply
 
 
-class SystemFeedbackSerializer(serializers.ModelSerializer):
+class SystemFeedbackReplySerializer(serializers.ModelSerializer):
+    user = serializers.TechnicalManagerSerializer()
     class Meta:
-        model = SystemFeedback
+        model = SystemFeedbackReply
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at')
         extra_kwargs = {
@@ -14,9 +15,12 @@ class SystemFeedbackSerializer(serializers.ModelSerializer):
         }
 
 
-class SystemFeedbackReplySerializer(serializers.ModelSerializer):
+class SystemFeedbackSerializer(serializers.ModelSerializer):
+    reply = SystemFeedbackReplySerializer()
+    user = serializers.NormalUserSerializer()
+
     class Meta:
-        model = SystemFeedbackReply
+        model = SystemFeedback
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at')
         extra_kwargs = {

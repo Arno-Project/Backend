@@ -157,6 +157,7 @@ class SystemFeedback(models.Model):
 
     def set_reply(self, reply):
         self.reply = reply
+        self.set_status(self.SystemFeedbackStatus.Replied)
 
     def get_reply(self):
         return self.reply
