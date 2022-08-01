@@ -1,7 +1,6 @@
 from django.urls import path
 
-from accounts.views import RegisterView, LoginView, MyAccountView, AccountsView, ManagerRegisterView, LogoutView, \
-    SpecialityView, SpecialityAddRemoveView
+from accounts.views import *
 
 urlpatterns = [
     path('register/<slug:role>/', RegisterView.as_view(), name='register'),
@@ -12,5 +11,6 @@ urlpatterns = [
     path('all/', AccountsView.as_view(), name='all-accounts'),
     path('speciality/', SpecialityView.as_view(), name='speciality'),
     path('speciality/add/', SpecialityAddRemoveView.as_view(), name='add-speciality'),
+    path('specialist/confirm/',ConfirmSpecialistView.as_view(), name='confirm-specialist'),
 
 ]

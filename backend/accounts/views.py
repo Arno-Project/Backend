@@ -205,3 +205,22 @@ class SpecialityAddRemoveView(APIView):
 
     def delete(self, request, *args, **kwargs):
         return self.add_remove_speciality(request, False, *args, **kwargs)
+
+
+class ConfirmSpecialistView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class() | PermissionFactory(
+        User.UserRole.TechnicalManager).get_permission_class()]
+
+    def post(self, request, *args, **kwargs):
+        specialist_id = request.data.get('specialist_id')
+        try:
+            specialist = UserCatalogue().search(query={'specialist_id': specialist_id, 'role': "S"})[
+                0].normal_user_user.specialist_normal_user
+        except IndexError:
+            raise APIException("Not Found", status.HTTP_404_NOT_FOUND)
+        if specialist.is_validated:
+            raise APIException("Specialist already confirmed", status.HTTP_400_BAD_REQUEST)
+
+        request.user.manager_user_user.confirm_specialist(specialist)
+        return HttpResponse('OK', status=status.HTTP_200_OK)

@@ -113,6 +113,7 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.normal_user.__str__()
+
     class Meta:
         verbose_name = u"مشتری"
         verbose_name_plural = u"مشتریان"
@@ -139,7 +140,7 @@ class Customer(models.Model):
 
     def submit_feedback(self, request, feedback: str, score: int):
         pass
-        
+
     @classmethod
     def search(cls, query):
         result = User.search(query, is_customer=True)
@@ -150,7 +151,7 @@ class Customer(models.Model):
 class Speciality(models.Model):
     title = models.CharField(max_length=100, verbose_name=u"نام تخصص")
     description = models.TextField(verbose_name=u"توضیحات")
-    
+
     def get_title(self):
         return self.title
 
@@ -162,7 +163,7 @@ class Speciality(models.Model):
 
     def set_description(self, description):
         self.description = description
-        
+
     @classmethod
     def search(cls, query):
         result = cls.objects
@@ -180,10 +181,10 @@ class Specialist(models.Model):
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
     is_validated = models.BooleanField(default=False)
-    
+
     def __str__(self):
         return self.normal_user.__str__()
-        
+
     def add_speciality(self, speciality: "Speciality"):
         self.speciality.add(speciality)
 
@@ -224,8 +225,13 @@ class Specialist(models.Model):
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
 
+    def confirm_specialist(self, specialist: Specialist):
+        specialist.is_validated = True
+        specialist.save()
+
     def __str__(self):
         return self.user.__str__()
+
 
 class CompanyManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
@@ -265,6 +271,7 @@ class UserCatalogue(metaclass=Singleton):
 
     def search(self, query):
         result = self.users
+        print(query)
 
         if not query:
             return result
@@ -283,7 +290,9 @@ class UserCatalogue(metaclass=Singleton):
                 for field in ['speciality']:
                     if query.get(field):
                         result = result.filter(Q(**{'specialist__' + field + '__icontains': query[field]}))
-                return result
+        if query.get('specialist_id'):
+            result = result.filter(Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
+            print(result)
 
         return result
 
