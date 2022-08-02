@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import RequestSearchView, LocationView, RequestSubmitView, RequestCancelByManagerView, RequestStatusView, \
-    RequestInitialAcceptBySpecialistView, RequestFinalizeByCustomerView
+    RequestInitialAcceptBySpecialistView, RequestFinalizeByCustomerView, SelectSpecialistForRequestView
 
 urlpatterns = [
     path('request/search/', RequestSearchView.as_view(), name='request-search'),
@@ -13,4 +13,5 @@ urlpatterns = [
          name='request-initial-accept-by-specialist'),
     path('request/accept/customer/final/', RequestFinalizeByCustomerView.as_view(),
          name='request-finalize-by-customer'),
+    path('request/select/specialist/', SelectSpecialistForRequestView.as_view(), name='request-select-specialist'),
 ]

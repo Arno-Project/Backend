@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
-from accounts.models import User
+from accounts.models import User, UserCatalogue, Specialist
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
 from django.utils.translation import gettext_lazy as _
@@ -28,7 +28,7 @@ class RequestSearchView(generics.GenericAPIView):
             query['customer']['id'] = request.user.id
         if request.user.role == User.UserRole.Specialist:
             query['speciality'] = {}
-            query['speciality']['id'] = request.user.full_user.speciality.all()
+            query['speciality']['id'] = request.user.full_user.get_speciality()
         requests = RequestCatalogue().search(query)
         serialized = RequestSerializer(requests, many=True)
         return JsonResponse(serialized.data, safe=False)
@@ -105,7 +105,7 @@ class RequestInitialAcceptBySpecialistView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class()]
 
-    def validate(self, request):
+    def validate(self, request, user):
         try:
             request = request.first()
         except:
@@ -125,12 +125,17 @@ class RequestInitialAcceptBySpecialistView(APIView):
             return Response({
                 'error': _('Request is not in pending status')
             }, status=HTTP_400_BAD_REQUEST)
+
+        if request.get_requested_speciality() not in user.full_user.get_speciality():
+            return Response({
+                'error': _('You does not have required speciality')
+            }, status=HTTP_400_BAD_REQUEST)
         return None
 
     def post(self, request):
         request_id = request.data.get('request_id')
         core_request = RequestCatalogue().search(query={"id": request_id})
-        if result := self.validate(core_request):
+        if result := self.validate(core_request, request.user):
             return result
         core_request = core_request.first()
 
@@ -147,7 +152,7 @@ class RequestFinalizeByCustomerView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
 
-    def validate(self, request , customer):
+    def validate(self, request, customer):
         try:
             request = request.first()
         except:
@@ -172,8 +177,12 @@ class RequestFinalizeByCustomerView(APIView):
 
     def post(self, request):
         request_id = request.data.get('request_id')
+        if request_id is None:
+            return Response({
+                'error': _('request_id is required')
+            }, status=HTTP_400_BAD_REQUEST)
         core_request = RequestCatalogue().search(query={"id": request_id})
-        if result := self.validate(core_request,request.user.full_user):
+        if result := self.validate(core_request, request.user.full_user):
             return result
         core_request = core_request.first()
 
@@ -192,6 +201,63 @@ class RequestFinalizeByCustomerView(APIView):
         core_request.save()
         return JsonResponse({
             'request': RequestSerializer(core_request).data
+        })
+
+
+class SelectSpecialistForRequestView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+
+    def validate(self, request, specialist):
+        try:
+            request = request.first()
+        except:
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+        try:
+            specialist = specialist.first()
+        except:
+            return Response({
+                'error': _('Specialist not found')
+            }, status=HTTP_404_NOT_FOUND)
+
+        if request is None:
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+        if request.get_status() != Request.RequestStatus.PENDING:
+            return Response({
+                'error': _('Request is not in pending status')
+            }, status=HTTP_400_BAD_REQUEST)
+
+        if request.get_requested_speciality() not in specialist.full_user.get_speciality():
+            return Response({
+                'error': _('Selected specialist does not have required speciality')
+            }, status=HTTP_400_BAD_REQUEST)
+        return None
+
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        specialist_id = request.data.get('specialist_id')
+        if specialist_id is None:
+            return Response({
+                'error': _('specialist_id is required')
+            }, status=HTTP_400_BAD_REQUEST)
+        core_request = RequestCatalogue().search(query={"id": request_id})
+        specialist = UserCatalogue().search(query={"specialist_id": specialist_id})
+
+        if result := self.validate(core_request, specialist):
+            return result
+        core_request = core_request.first()
+        specialist = specialist.first().full_user
+
+        # TODO, More OOP Refactor
+        core_request.set_status(Request.RequestStatus.WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST)
+        core_request.set_specialist(specialist)
+        core_request.save()
+        return JsonResponse({
+            'request ': RequestSerializer(core_request).data
         })
 
 
