@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from django.utils.translation import gettext_lazy as _
 
-
 from accounts.models import *
 
 
@@ -56,8 +55,10 @@ class LocationCatalogue(metaclass=Singleton):
 class Request(models.Model):
     class RequestStatus(models.TextChoices):
         PENDING = 'PEND', _('pending')
-        REQUESTED_FROM_SPECIALIST = 'REQS', _('Waiting for acceptance of customer from specialist')
-        WAIT = 'WAIT', _('Waiting for acceptance of the specialist from customer')
+        WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST = 'WAIC', _(
+            'Waiting for acceptance of customer from specialist')
+        WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER = 'WAIS', _(
+            'Waiting for acceptance of the specialist from customer')
         IN_PROGRESS = 'PROG', _('In Progress')
         DONE = 'DONE', _('Done')
         CANCELED = 'CNCL', _('Canceled')
@@ -87,14 +88,12 @@ class Request(models.Model):
         return self.requested_speciality
 
     def get_desired_start_time(self):
-
         return self.desired_start_time
 
     def get_description(self):
         return self.description
 
     def get_status(self):
-
         return self.status
 
     def get_created_at(self):
@@ -122,14 +121,12 @@ class Request(models.Model):
         self.requested_speciality = requested_speciality
 
     def set_desired_start_time(self, desired_start_time: datetime):
-
         self.desired_start_time = desired_start_time
 
     def set_description(self, description: str):
         self.description = description
 
     def set_status(self, status: str):
-
         self.status = status
 
     def set_created_at(self, created_at: datetime):
@@ -154,7 +151,6 @@ class Request(models.Model):
     def cancel(self):
         self.status = Request.RequestStatus.CANCELED
         self.save()
-
 
 
 class RequestCatalogue(metaclass=Singleton):
@@ -206,12 +202,10 @@ class RequestCatalogue(metaclass=Singleton):
             if query.get(field):
                 result = result.filter(**{'_'.join(query.get(field).split('_')[:-1]) + "__lte": query.get(field)})
 
-
         return result
 
     def get_requests(self):
         return self.requests
-
 
     # TODO Maybe use this, but this is very dirty
     # def search_by_customer(self, query) -> RequestCatalogue:
