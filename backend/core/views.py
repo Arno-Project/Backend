@@ -9,7 +9,7 @@ from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
 
 from accounts.models import User
-from core.models import Request, Location
+from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
 from django.utils.translation import gettext_lazy as _
 
@@ -22,8 +22,11 @@ class RequestSearchView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        print(request.GET)
-        requests = Request.search(json.loads(request.GET.get('q')))
+        query = json.loads(request.GET.get('q'))
+        if request.user.role == User.UserRole.Customer:
+            query['customer'] = {}
+            query['customer']['id'] = request.user.id
+        requests = RequestCatalogue().search(query)
         serialized = RequestSerializer(requests, many=True)
         return JsonResponse(serialized.data, safe=False)
 
@@ -102,9 +105,9 @@ class RequestStatusView(APIView):
 
     def get(self, request):
         if request.user.role == User.UserRole.Customer:
-            requests = Request.objects.filter(customer=request.user.normal_user_user.customer_normal_user)
+            requests = Request.objects.filter(customer=request.user.full_user)
         elif request.user.role == User.UserRole.Specialist:
-            requests = Request.objects.filter(specialist=request.user.normal_user_user.specialist_normal_user)
+            requests = Request.objects.filter(specialist=request.user.full_user)
         else:
             return Response(data=_('You are not a customer or a specialist'), status=HTTP_400_BAD_REQUEST)
         serialized = RequestSerializer(requests, many=True)
