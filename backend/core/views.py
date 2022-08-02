@@ -26,6 +26,9 @@ class RequestSearchView(generics.GenericAPIView):
         if request.user.role == User.UserRole.Customer:
             query['customer'] = {}
             query['customer']['id'] = request.user.id
+        if request.user.role == User.UserRole.Specialist:
+            query['speciality'] = {}
+            query['speciality']['id'] = request.user.full_user.speciality.all()
         requests = RequestCatalogue().search(query)
         serialized = RequestSerializer(requests, many=True)
         return JsonResponse(serialized.data, safe=False)

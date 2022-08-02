@@ -163,6 +163,9 @@ class RequestCatalogue(metaclass=Singleton):
     def search(self, query: dict):
         result = self.requests
 
+        if query.get('id'):
+            result = result.filter(pk__in=query['id'])
+
         if query.get('customer'):
             customer_query = {
                 **query.get('customer'),
