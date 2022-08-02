@@ -70,7 +70,6 @@ class RequestSubmitView(APIView):
         _request = RequestCatalogue().search(
             query={'requested_speciality': requested_speciality, 'customer': {'id': request.user.id}})
         if _request.exists():
-            print("here")
             return Response({
                 'error': _('You have already requested this speciality')
             }, status=HTTP_400_BAD_REQUEST)
@@ -95,7 +94,12 @@ class RequestCancelByManagerView(APIView):
 
     def post(self, request):
         request_id = request.data.get('request_id')
-        request = Request.objects.get(pk=request_id)
+        request = RequestCatalogue().search(query={'id': request_id})
+        if not request.exists():
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+        request = request[0]
         if request.get_status() == Request.RequestStatus.CANCELED:
             return Response({
                 'error': _('Request already canceled')
