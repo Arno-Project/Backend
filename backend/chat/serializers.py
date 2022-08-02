@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer
-from backend.accounts.serializers import NormalUserSerializer
+from accounts.serializers import NormalUserSerializer
 
 from .models import Message
 

@@ -3,27 +3,27 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.http import JsonResponse
 
-from backend.chat.models import MessageCatalogue
-from backend.chat.serializers import MessageSerializer
+from chat.models import MessageCatalogue
+from chat.serializers import MessageSerializer
 
 
 class ChatsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        user1 = request.GET.get('user1', None)
-        user2 = request.GET.get('user2', None)
-        if not user1:
-            return ""  # TODO
+    def get(self, request, peer_id=None):
+        user = request.user
+        peer = peer_id
+        print("USER1 USER2 ", user, peer, type(user), type(peer))
 
-        if not user2:
-            messages = MessageCatalogue().search(user1)
+        if not peer:
+            messages = MessageCatalogue().search(user)
         else:
-            messages = MessageCatalogue().search(user1, user2)
-
+            messages = MessageCatalogue().search(user, peer)
+        print("MSG", messages)
+        
         serialized = MessageSerializer(messages, many=True)
-        return JsonResponse(serialized.data)
+        return JsonResponse(serialized.data, safe=False)
 
     def post(self, request):
         serializer = MessageSerializer(data=request.data)

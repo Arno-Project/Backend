@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'feedback.apps.FeedbackConfig',
     'corsheaders',
+    'chat',
     'rest_framework',
     'phone_field',
     'knox',
