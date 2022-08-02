@@ -64,11 +64,13 @@ class RequestSubmitView(APIView):
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
 
     def post(self, request, *args, **kwargs):
-        data = {'customer': User.objects.get(pk=request.user.id).normal_user_user.customer_normal_user.id}
+
+        data = {'customer': UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user.id}
         requested_speciality = request.data['requested_speciality']
-        # TODO Use Catalogue :|
-        if Request.objects.filter(customer=request.user.normal_user_user.customer_normal_user,
-                                  requested_speciality=requested_speciality).exists():
+        _request = RequestCatalogue().search(
+            query={'requested_speciality': requested_speciality, 'customer': {'id': request.user.id}})
+        if _request.exists():
+            print("here")
             return Response({
                 'error': _('You have already requested this speciality')
             }, status=HTTP_400_BAD_REQUEST)
