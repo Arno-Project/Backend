@@ -177,7 +177,7 @@ class Specialist(models.Model):
         self.speciality.remove(speciality)
 
     def get_speciality(self):
-        return self.speciality
+        return self.speciality.all()
 
     def upload_document(self, document):
         pass
