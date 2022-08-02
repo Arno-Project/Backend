@@ -192,7 +192,7 @@ class SpecialityAddRemoveView(APIView):
             specialist_id = request.data.get('specialist_id')
         speciality = Speciality.objects.get(pk=speciality_id)
         specialist = UserCatalogue().search(query={'id': specialist_id, 'role': "S"})[
-            0].normal_user_user.specialist_normal_user
+            0].full_user
         # specialist=Specialist.objects.filter(normal_user__user_id=specialist_id).first()
         if is_add:
             specialist.add_speciality(speciality)
@@ -216,11 +216,11 @@ class ConfirmSpecialistView(APIView):
         specialist_id = request.data.get('specialist_id')
         try:
             specialist = UserCatalogue().search(query={'specialist_id': specialist_id, 'role': "S"})[
-                0].normal_user_user.specialist_normal_user
+                0].full_user
         except IndexError:
             raise APIException("Not Found", status.HTTP_404_NOT_FOUND)
         if specialist.is_validated:
             raise APIException("Specialist already confirmed", status.HTTP_400_BAD_REQUEST)
 
-        request.user.manager_user_user.confirm_specialist(specialist)
+        request.user.general_user.confirm_specialist(specialist)
         return HttpResponse('OK', status=status.HTTP_200_OK)
