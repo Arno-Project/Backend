@@ -14,6 +14,8 @@ migrate:
 	docker-compose exec arno python manage.py migrate
 makemigrations:
 	docker-compose exec arno python manage.py makemigrations
+startapp:
+	docker-compose exec arno python manage.py startapp $(name)
 superuser:
 	docker-compose exec arno python manage.py createsuperuser
 runserver:
