@@ -5,7 +5,7 @@ from knox.auth import TokenAuthentication
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
 from accounts.models import User
@@ -98,6 +98,100 @@ class RequestCancelByManagerView(APIView):
         request.cancel()
         return JsonResponse({
             'request': RequestSerializer(request).data
+        })
+
+
+class RequestInitialAcceptBySpecialistView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class()]
+
+    def validate(self, request):
+        try:
+            request = request.first()
+        except:
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+
+        if request is None:
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+        if request.get_status() == Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER:
+            return Response({
+                'error': _('request already in initial acceptance status from specialist')
+            }, status=HTTP_400_BAD_REQUEST)
+        if request.get_status() != Request.RequestStatus.PENDING:
+            return Response({
+                'error': _('Request is not in pending status')
+            }, status=HTTP_400_BAD_REQUEST)
+        return None
+
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        core_request = RequestCatalogue().search(query={"id": request_id})
+        if result := self.validate(core_request):
+            return result
+        core_request = core_request.first()
+
+        # TODO, More OOP Refactor
+        core_request.set_status(Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER)
+        core_request.set_specialist(request.user.full_user)
+        core_request.save()
+        return JsonResponse({
+            'request': RequestSerializer(core_request).data
+        })
+
+
+class RequestFinalizeByCustomerView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+
+    def validate(self, request , customer):
+        try:
+            request = request.first()
+        except:
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+
+        if request is None:
+            return Response({
+                'error': _('Request not found')
+            }, status=HTTP_404_NOT_FOUND)
+        if request.customer != customer:
+            return Response({
+                'error': _('Request is not for you')
+            }, status=HTTP_400_BAD_REQUEST)
+        if request.get_status() != Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER:
+            return Response({
+                'error': _('Request is not in waiting for customer acceptance from specialist status')
+            }, status=HTTP_400_BAD_REQUEST)
+
+        return None
+
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        core_request = RequestCatalogue().search(query={"id": request_id})
+        if result := self.validate(core_request,request.user.full_user):
+            return result
+        core_request = core_request.first()
+
+        is_accept = request.data.get('is_accept')
+        if is_accept is None:
+            return Response({
+                'error': _('is_accept is required')
+            }, status=HTTP_400_BAD_REQUEST)
+        # TODO, More OOP Refactor
+        if is_accept == "1":
+            core_request.set_status(Request.RequestStatus.IN_PROGRESS)
+        else:
+            core_request.set_status(Request.RequestStatus.PENDING)
+            core_request.set_specialist(None)
+
+        core_request.save()
+        return JsonResponse({
+            'request': RequestSerializer(core_request).data
         })
 
 
