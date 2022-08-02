@@ -1,9 +1,9 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 # Create your models here.
 from accounts.models import User
 from utils.Singleton import Singleton
-from django.utils.translation import gettext_lazy as _
 
 
 class Notification(models.Model):
@@ -76,13 +76,6 @@ class NotificationCatalogue(metaclass=Singleton):
         return self.notifications.filter(user=user).order_by('-date')
 
 
-class NotificationBuilder(metaclass=Singleton):
-    def create_notification(self, user, title="", message="", type=Notification.NotificationType.INFO, link=""):
-        notif = Notification()
-        notif.set_user(user)
-        notif.set_title(title)
-        notif.set_message(message)
-        notif.set_type(type)
-        notif.set_is_read(False)
-        notif.set_link(link)
-        notif.save()
+
+
+

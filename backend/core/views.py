@@ -14,6 +14,10 @@ from core.serializers import RequestSerializer, LocationSerializer, RequestSubmi
 from django.utils.translation import gettext_lazy as _
 
 # Create your views here.
+from notification.notifications import RequestInitialAcceptBySpecialistNotification, \
+    RequestAcceptanceFinalizeByCustomerNotification, RequestRejectFinalizeByCustomerNotification, BaseNotification, \
+    SelectSpecialistForRequestNotification, RequestAcceptanceFinalizeBySpecialistNotification, \
+    RequestRejectFinalizeBySpecialistNotification
 from utils.permissions import PermissionFactory
 
 
@@ -104,6 +108,7 @@ class RequestCancelByManagerView(APIView):
 class RequestInitialAcceptBySpecialistView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class()]
+    notification_builder: BaseNotification = RequestInitialAcceptBySpecialistNotification
 
     def validate(self, request, user):
         try:
@@ -139,10 +144,13 @@ class RequestInitialAcceptBySpecialistView(APIView):
             return result
         core_request = core_request.first()
 
-        # TODO, More OOP Refactor - Create Notification
+        # TODO, More OOP Refactor
         core_request.set_status(Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER)
         core_request.set_specialist(request.user.full_user)
         core_request.save()
+
+        self.notification_builder(core_request).build()
+
         return JsonResponse({
             'request': RequestSerializer(core_request).data
         })
@@ -151,6 +159,9 @@ class RequestInitialAcceptBySpecialistView(APIView):
 class RequestAcceptanceFinalizeByCustomerView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+
+    notification_builder_accept: BaseNotification = RequestAcceptanceFinalizeByCustomerNotification
+    notification_builder_reject: BaseNotification = RequestRejectFinalizeByCustomerNotification
 
     def validate(self, request, customer):
         try:
@@ -191,12 +202,14 @@ class RequestAcceptanceFinalizeByCustomerView(APIView):
             return Response({
                 'error': _('is_accept is required')
             }, status=HTTP_400_BAD_REQUEST)
-        # TODO, More OOP Refactor - Create Notification
+        # TODO, More OOP Refactor
         if is_accept == "1":
             core_request.set_status(Request.RequestStatus.IN_PROGRESS)
+            self.notification_builder_reject(core_request).build()
         else:
             core_request.set_status(Request.RequestStatus.PENDING)
             core_request.set_specialist(None)
+            self.notification_builder_accept(core_request).build()
 
         core_request.save()
         return JsonResponse({
@@ -207,6 +220,7 @@ class RequestAcceptanceFinalizeByCustomerView(APIView):
 class SelectSpecialistForRequestView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+    notification_builder: BaseNotification = SelectSpecialistForRequestNotification
 
     def validate(self, request, specialist):
         try:
@@ -252,10 +266,11 @@ class SelectSpecialistForRequestView(APIView):
         core_request = core_request.first()
         specialist = specialist.first().full_user
 
-        # TODO, More OOP Refactor - Create Notification
+        # TODO, More OOP Refactor
         core_request.set_status(Request.RequestStatus.WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST)
         core_request.set_specialist(specialist)
         core_request.save()
+        self.notification_builder(core_request).build()
         return JsonResponse({
             'request ': RequestSerializer(core_request).data
         })
@@ -264,6 +279,9 @@ class SelectSpecialistForRequestView(APIView):
 class RequestAcceptanceFinalizeBySpecialistView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class()]
+
+    notification_builder_accept: BaseNotification = RequestAcceptanceFinalizeBySpecialistNotification
+    notification_builder_reject: BaseNotification = RequestRejectFinalizeBySpecialistNotification
 
     def validate(self, request, specialist):
         try:
@@ -300,12 +318,14 @@ class RequestAcceptanceFinalizeBySpecialistView(APIView):
             return Response({
                 'error': _('is_accept is required')
             }, status=HTTP_400_BAD_REQUEST)
-        # TODO, More OOP Refactor - Create Notification
+        # TODO, More OOP Refactor
         if is_accept == "1":
             core_request.set_status(Request.RequestStatus.IN_PROGRESS)
+            self.notification_builder_reject(core_request).build()
         else:
             core_request.set_status(Request.RequestStatus.PENDING)
             core_request.set_specialist(None)
+            self.notification_builder_accept(core_request).build()
         core_request.save()
         return JsonResponse({
             'request': RequestSerializer(core_request).data
