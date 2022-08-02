@@ -38,8 +38,10 @@ class RegisterView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         role = self.kwargs.get('role')
-        self.serializer_class = self.get_serializer_class()
-
+        try:
+            self.serializer_class = self.get_serializer_class()
+        except APIException as e:
+            return Response({'error': "Invalid Role"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -53,7 +55,8 @@ class RegisterView(generics.GenericAPIView):
 
 
 class ManagerRegisterView(generics.GenericAPIView):
-    # TODO
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
@@ -66,18 +69,19 @@ class ManagerRegisterView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         role = self.kwargs.get('role')
-        self.serializer_class = self.get_serializer_class()
-
+        try:
+            self.serializer_class = self.get_serializer_class()
+        except APIException as e:
+            return Response({'error': "Invalid Role"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         return Response({
-            # TODO
-            **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else CustomerFullSerializer)(user).data[
                 'user'],
             'role': role,
-            'token': AuthToken.objects.create(user.normal_user.user)[1]
+            'token': AuthToken.objects.create(user.manager_user.user)[1]
         })
 
 
@@ -109,9 +113,6 @@ class MyAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
-        print(request.user)
-        print(format)
-
         return Response({
             'user': UserFullSerializer(request.user).data,
             'role': request.user.get_role()
