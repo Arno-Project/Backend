@@ -160,7 +160,7 @@ class RequestCatalogue(metaclass=Singleton):
         result = self.requests
 
         if query.get('id'):
-            result = result.filter(pk__in=query['id'])
+            result = result.filter(pk__in=python_ensure_list(query['id']))
 
         if query.get('customer'):
             customer_query = {

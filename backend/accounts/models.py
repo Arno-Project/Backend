@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
 from utils.Singleton import Singleton
+from utils.helper_funcs import python_ensure_list
 
 
 class User(AbstractUser):
@@ -150,7 +151,7 @@ class SpecialityCatalogue(metaclass=Singleton):
     def search(self, query):
         result = self.specialities
         if query.get('id'):
-            result = result.filter(pk__in=query.get('id'))
+            result = result.filter(pk__in=python_ensure_list(query.get('id')))
         for field in ['name', 'description']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
@@ -239,7 +240,7 @@ class UserCatalogue(metaclass=Singleton):
             return result
         for field in ['id']:
             if query.get(field):
-                result = result.filter(pk__in=query[field])
+                result = result.filter(pk__in=python_ensure_list(query[field]))
         for field in ['first_name', 'last_name', 'phone']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))

@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from notification.models import NotificationCatalogue, Notification
 from notification.serializers import NotificationSerializer
+from utils.helper_funcs import python_ensure_list
 
 
 class NotificationView(APIView):
@@ -35,8 +36,7 @@ class NotificationView(APIView):
             ids = [int(notification_id)]
         else:
             ids = request.data.get("id")
-        id_list = list(map(int, ids.split(','))) if isinstance(ids, str) else (
-            [ids] if isinstance(ids, int) else (list(map(int, ids)) if isinstance(ids, list) else None))
+        id_list = python_ensure_list(ids)
         objs = []
         for id in id_list:
             try:
