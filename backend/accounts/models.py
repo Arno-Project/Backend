@@ -36,31 +36,16 @@ class User(AbstractUser):
         elif self.role == User.UserRole.TechnicalManager:
             return self.manager_user_user.technical_manager_manger_user
 
+    @property
+    def general_user(self):
+        if self.role == User.UserRole.Customer or self.role == User.UserRole.Specialist:
+            return self.normal_user_user
+        elif self.role == User.UserRole.CompanyManager or self.role == User.UserRole.TechnicalManager:
+            return self.manager_user_user
+
     class Meta:
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
-
-    @classmethod
-    def search(cls, query: dict, is_customer=False, is_specialist=False, is_company_manager=False,
-               is_technical_manager=False):
-        result = cls.objects
-        if is_customer:
-            result.filter(customer__isnull=False)
-        elif is_specialist:
-            result.filter(specialist__isnull=False)
-        elif is_company_manager:
-            result.filter(company_manager__isnull=False)
-        elif is_technical_manager:
-            result.filter(technical_manager__isnull=False)
-
-        for field in ['first_name', 'last_name', 'phone']:
-            if query.get(field):
-                result = result.filter(Q(**{field + '__icontains': query[field]}))
-        if query.get('username'):
-            result = result.filter(Q(username__eq=query['username']))
-        # filter User objects that exist in Customer Table
-
-        return result
 
     def get_role(self):
         return self.role
@@ -141,12 +126,6 @@ class Customer(models.Model):
     def submit_feedback(self, request, feedback: str, score: int):
         pass
 
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_customer=True)
-        result = cls.objects.filter(user__in=result)
-        return result
-
 
 class Speciality(models.Model):
     title = models.CharField(max_length=100, verbose_name=u"نام تخصص")
@@ -164,12 +143,16 @@ class Speciality(models.Model):
     def set_description(self, description):
         self.description = description
 
-    @classmethod
-    def search(cls, query):
-        result = cls.objects
-        for field in ['name']:
+
+class SpecialityCatalogue(metaclass=Singleton):
+    specialities = Speciality.objects.all()
+
+    def search(self, query):
+        result = self.specialities
+        for field in ['name', 'description']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
+        return result
 
 
 class Specialist(models.Model):
@@ -212,15 +195,6 @@ class Specialist(models.Model):
     def submit_request_fullfillment(self, request):
         pass
 
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_specialist=True)
-        result = cls.objects.filter(user__in=result)
-        for field in ['speciality']:
-            if query.get(field):
-                result = result.filter(Q(**{'specialist__' + field + '__icontains': query[field]}))
-        return result
-
 
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
@@ -243,12 +217,6 @@ class CompanyManager(models.Model):
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
 
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_company_manager=True)
-        result = cls.objects.filter(user__in=result)
-        return result
-
 
 class TechnicalManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
@@ -257,14 +225,6 @@ class TechnicalManager(models.Model):
     def __str__(self):
         return self.manager_user.__str__()
 
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_technical_manager=True)
-        result = cls.objects.filter(user__in=result)
-        return result
-
-
-# create singleton class for UserCatalogue
 
 class UserCatalogue(metaclass=Singleton):
     users = User.objects.all()
