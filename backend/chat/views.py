@@ -13,16 +13,17 @@ class ChatsView(APIView):
 
     def get(self, request, peer_id=None):
         user = request.user
-        peer = peer_id
-        print("USER1 USER2 ", user, peer, type(user), type(peer))
 
-        if not peer:
+        if not peer_id:
             messages = MessageCatalogue().search(user)
         else:
-            messages = MessageCatalogue().search(user, peer)
-        print("MSG", messages)
+            messages = MessageCatalogue().search(user, peer_id)
         
         serialized = MessageSerializer(messages, many=True)
+
+        if peer_id: # if user get messages from one person mark all of them as read
+            messages.filter(receiver__user__pk=user.pk).update(is_read=True)
+
         return JsonResponse(serialized.data, safe=False)
 
     def post(self, request):

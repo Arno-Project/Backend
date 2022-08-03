@@ -19,6 +19,7 @@ class Message(models.Model):
         accounts.models.NormalUser, on_delete=models.CASCADE, related_name='received_messages')
     text = models.TextField(null=False, blank=False)
     type = models.CharField(max_length=1, choices=MessageType.choices)
+    is_read = models.BooleanField(default=False)
 
     def get_time(self):
         return self.created_at
@@ -36,11 +37,11 @@ class Message(models.Model):
 class MessageCatalogue(metaclass=Singleton):
     messages = Message.objects.all()
 
-    def search(self, user: NormalUser, peer: NormalUser = None):
+    def search(self, user: NormalUser, peer_id:int = None):
         print(self.messages)
         for m in self.messages:
             print("---", m, m.sender.user.pk, m.receiver.user.pk, user.pk)
-        if not peer:  # TODO only get last message
+        if not peer_id: 
             return self.messages\
                 .filter(Q(sender__user__pk=user.pk) | Q(receiver__user__pk=user.pk))\
                 .annotate(peer=Case(
@@ -52,7 +53,7 @@ class MessageCatalogue(metaclass=Singleton):
         else:
             return self.messages\
                 .filter(
-                    (Q(sender__user__pk=user.pk) & Q(receiver__user__pk=peer.pk)) |
-                    (Q(sender__user__pk=peer.pk) & Q(receiver__user__pk=user.pk))
+                    (Q(sender__user__pk=user.pk) & Q(receiver__user__pk=peer_id)) |
+                    (Q(sender__user__pk=peer_id) & Q(receiver__user__pk=user.pk))
                 )\
                 .order_by('-created_at')
