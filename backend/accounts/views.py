@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from utils.permissions import PermissionFactory
 from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
-    TechnicalManager, Customer
+    TechnicalManager, Customer, SpecialityCatalogue
 from .serializers import CompanyManagerSerializer, CustomerSerializer, \
     SpecialistFullSerializer, \
     CustomerFullSerializer, SpecialistSerializer, TechnicalManagerSerializer, \
@@ -38,8 +38,10 @@ class RegisterView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         role = self.kwargs.get('role')
-        self.serializer_class = self.get_serializer_class()
-
+        try:
+            self.serializer_class = self.get_serializer_class()
+        except APIException as e:
+            return Response({'error': "Invalid Role"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -53,7 +55,8 @@ class RegisterView(generics.GenericAPIView):
 
 
 class ManagerRegisterView(generics.GenericAPIView):
-    # TODO
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
@@ -66,18 +69,20 @@ class ManagerRegisterView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         role = self.kwargs.get('role')
-        self.serializer_class = self.get_serializer_class()
-
+        try:
+            self.serializer_class = self.get_serializer_class()
+        except APIException as e:
+            return Response({'error': "Invalid Role"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         return Response({
-            # TODO
-            **(SpecialistFullSerializer if role == 'specialist' else CustomerFullSerializer)(user).data[
+            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else CustomerFullSerializer)(
+                user).data[
                 'user'],
             'role': role,
-            'token': AuthToken.objects.create(user.normal_user.user)[1]
+            'token': AuthToken.objects.create(user.manager_user.user)[1]
         })
 
 
@@ -109,12 +114,41 @@ class MyAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
-        print(request.user)
-        print(format)
-
         return Response({
             'user': UserFullSerializer(request.user).data,
             'role': request.user.get_role()
+        })
+
+
+class EditProfileView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, user_id=''):
+        if user_id == '':
+            user_id = request.user.id
+        if not (
+                request.user.role == User.UserRole.CompanyManager or request.user.role == User.UserRole.TechnicalManager):
+            if int(request.user.id) != int(user_id):
+                return Response({'error': "You can't edit other users accounts"}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.get(id=user_id)
+        for field in ['first_name', 'last_name', 'email', 'phone_number']:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+
+        if 'password' in request.data:
+            if 'old_password' not in request.data:
+                return Response({'error': "You must provide old password"}, status=status.HTTP_400_BAD_REQUEST)
+            if not user.check_password(request.data['old_password']):
+                return Response({'error': "Old password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(request.data['password'])
+
+        user.save()
+        serializer = UserFullSerializer(user)
+
+        return Response({
+            'user': UserFullSerializer(user).data,
+            'role': user.get_role()
         })
 
 
@@ -166,6 +200,9 @@ class SpecialityView(APIView):
         return JsonResponse({'specialities': serialized}, safe=False)
 
     def post(self, request, *args, **kwargs):
+        speciality = SpecialityCatalogue().search(query={'title': request.data.get('title')})
+        if speciality.exists() and speciality.first().get_title() == request.data.get('title'):
+            return Response({'error': "Speciality already exists"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SpecialitySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         speciality = serializer.save()
@@ -192,7 +229,7 @@ class SpecialityAddRemoveView(APIView):
             specialist_id = request.data.get('specialist_id')
         speciality = Speciality.objects.get(pk=speciality_id)
         specialist = UserCatalogue().search(query={'id': specialist_id, 'role': "S"})[
-            0].normal_user_user.specialist_normal_user
+            0].full_user
         # specialist=Specialist.objects.filter(normal_user__user_id=specialist_id).first()
         if is_add:
             specialist.add_speciality(speciality)
@@ -205,3 +242,22 @@ class SpecialityAddRemoveView(APIView):
 
     def delete(self, request, *args, **kwargs):
         return self.add_remove_speciality(request, False, *args, **kwargs)
+
+
+class ConfirmSpecialistView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class() | PermissionFactory(
+        User.UserRole.TechnicalManager).get_permission_class()]
+
+    def post(self, request, *args, **kwargs):
+        specialist_id = request.data.get('specialist_id')
+        try:
+            specialist = UserCatalogue().search(query={'specialist_id': specialist_id, 'role': "S"})[
+                0].full_user
+        except IndexError:
+            raise APIException("Not Found", status.HTTP_404_NOT_FOUND)
+        if specialist.is_validated:
+            raise APIException("Specialist already confirmed", status.HTTP_400_BAD_REQUEST)
+
+        request.user.general_user.confirm_specialist(specialist)
+        return HttpResponse('OK', status=status.HTTP_200_OK)

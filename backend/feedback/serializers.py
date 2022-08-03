@@ -1,6 +1,11 @@
 from accounts import serializers
-from feedback.models import SystemFeedback, SystemFeedbackReply
+from feedback.models import SystemFeedback, SystemFeedbackReply, EvaluationMetric
 
+
+class EvaluationMetricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EvaluationMetric
+        fields = ('id', 'title', 'description', 'user_type')
 
 class SystemFeedbackReplySerializer(serializers.ModelSerializer):
     user = serializers.TechnicalManagerSerializer()
