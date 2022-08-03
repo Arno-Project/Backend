@@ -129,7 +129,7 @@ class EditProfileView(APIView):
             user_id = request.user.id
         if not (
                 request.user.role == User.UserRole.CompanyManager or request.user.role == User.UserRole.TechnicalManager):
-            if request.user.id != user_id:
+            if int(request.user.id) != int(user_id):
                 return Response({'error': "You can't edit other users accounts"}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.get(id=user_id)
         for field in ['first_name', 'last_name', 'email', 'phone_number']:
@@ -137,6 +137,10 @@ class EditProfileView(APIView):
                 setattr(user, field, request.data[field])
 
         if 'password' in request.data:
+            if 'old_password' not in request.data:
+                return Response({'error': "You must provide old password"}, status=status.HTTP_400_BAD_REQUEST)
+            if not user.check_password(request.data['old_password']):
+                return Response({'error': "Old password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
             user.set_password(request.data['password'])
 
         user.save()
