@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from utils.permissions import PermissionFactory
 from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
-    TechnicalManager, Customer
+    TechnicalManager, Customer, SpecialityCatalogue
 from .serializers import CompanyManagerSerializer, CustomerSerializer, \
     SpecialistFullSerializer, \
     CustomerFullSerializer, SpecialistSerializer, TechnicalManagerSerializer, \
@@ -200,6 +200,9 @@ class SpecialityView(APIView):
         return JsonResponse({'specialities': serialized}, safe=False)
 
     def post(self, request, *args, **kwargs):
+        speciality = SpecialityCatalogue().search(query={'title': request.data.get('title')})
+        if speciality.exists() and speciality.first().get_title() == request.data.get('title'):
+            return Response({'error': "Speciality already exists"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = SpecialitySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         speciality = serializer.save()

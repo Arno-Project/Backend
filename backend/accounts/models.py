@@ -152,7 +152,7 @@ class SpecialityCatalogue(metaclass=Singleton):
         result = self.specialities
         if query.get('id'):
             result = result.filter(pk__in=python_ensure_list(query.get('id')))
-        for field in ['name', 'description']:
+        for field in ['title', 'description']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
         return result
