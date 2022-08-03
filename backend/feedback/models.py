@@ -10,6 +10,8 @@ from core.models import Request
 from utils.Singleton import Singleton
 from django.utils.translation import gettext_lazy as _
 
+from utils.helper_funcs import python_ensure_list
+
 
 class EvaluationMetric(models.Model):
     title = models.CharField(max_length=255, null=False, blank=False)
@@ -36,8 +38,26 @@ class EvaluationMetric(models.Model):
         self.user_type = user_role
 
 
-class EvaluationMetricCatalogue(Singleton):
-    metrics = EvaluationMetric.objects.all()
+class EvaluationMetricCatalogue(metaclass=Singleton):
+    metrics = EvaluationMetric.objects
+
+    def search(self, query):
+        result = self.metrics
+        print(query)
+
+        if not query:
+            return result
+        for field in ['id']:
+            if query.get(field):
+                result = result.filter(pk__in=python_ensure_list(query[field]))
+        for field in ['title', 'description']:
+            if query.get(field):
+                result = result.filter(Q(**{field + '__icontains': query[field]}))
+        if query.get('user_type'):
+            print(query.get('user_type'))
+            result = result.filter(user_type__iexact=query['user_type'])
+        # filter User objects that exist in Customer Table
+        return result
 
     def get_evaluation_metric_list(self):
         return self.metrics
