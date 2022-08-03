@@ -26,7 +26,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     url(r'^api/account/', include('accounts.urls')),
     url(r'^api/core/', include('core.urls')),
-    url(r'^api/feedback/', include('feedback.urls')),
+    url(r'^api/feedback/', include('feedback.urls')), 
+    url(r'^api/chats/', include('chat.urls')),
     url(r'^api/notification/', include('notification.urls')),
 ]
 
