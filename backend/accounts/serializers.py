@@ -35,7 +35,6 @@ class UserFullSerializer(ModelSerializer):
         model = User
         fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login', 'role')
 
-
 class NormalUserSerializer(ModelSerializer):
     user = UserSerializer()
 

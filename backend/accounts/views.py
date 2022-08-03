@@ -78,7 +78,8 @@ class ManagerRegisterView(generics.GenericAPIView):
         user = serializer.save()
 
         return Response({
-            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else CustomerFullSerializer)(user).data[
+            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else CustomerFullSerializer)(
+                user).data[
                 'user'],
             'role': role,
             'token': AuthToken.objects.create(user.manager_user.user)[1]
@@ -116,6 +117,34 @@ class MyAccountView(APIView):
         return Response({
             'user': UserFullSerializer(request.user).data,
             'role': request.user.get_role()
+        })
+
+
+class EditProfileView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, user_id=''):
+        if user_id == '':
+            user_id = request.user.id
+        if not (
+                request.user.role == User.UserRole.CompanyManager or request.user.role == User.UserRole.TechnicalManager):
+            if request.user.id != user_id:
+                return Response({'error': "You can't edit other users accounts"}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.get(id=user_id)
+        for field in ['first_name', 'last_name', 'email', 'phone_number']:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+
+        if 'password' in request.data:
+            user.set_password(request.data['password'])
+
+        user.save()
+        serializer = UserFullSerializer(user)
+
+        return Response({
+            'user': UserFullSerializer(user).data,
+            'role': user.get_role()
         })
 
 
