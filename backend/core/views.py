@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
-from accounts.models import User, UserCatalogue, Specialist
+from accounts.models import User, UserCatalogue, Specialist, Customer
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
 from django.utils.translation import gettext_lazy as _
@@ -65,25 +65,20 @@ class RequestSubmitView(APIView):
 
     def post(self, request, *args, **kwargs):
 
-        data = {'customer': UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user.id}
+        customer: "Customer" = UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user
         requested_speciality = request.data['requested_speciality']
-        _request = RequestCatalogue().search(
-            query={'requested_speciality': requested_speciality, 'customer': {'id': request.user.id}})
-        if _request.exists():
+        desired_start_time = request.data['desired_start_time']
+        location = request.data.get('location', None)
+        description = request.data.get('description', '')
+        try:
+            created_request: Request = customer.submit_request(requested_speciality, desired_start_time, description,
+                                                               location,RequestCatalogue(),RequestSubmitSerializer)
+        except Exception as e:
             return Response({
-                'error': _('You have already requested this speciality')
+                'error': str(e)
             }, status=HTTP_400_BAD_REQUEST)
-
-        for field in ['location', 'description']:
-            if field in request.data:
-                data[field] = request.data[field]
-        data['desired_start_time'] = request.data['desired_start_time']
-        data['requested_speciality'] = requested_speciality
-        serializer = RequestSubmitSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        request = serializer.save()
         return JsonResponse({
-            'request': RequestSerializer(request).data
+            'request': RequestSerializer(created_request).data
         })
 
 

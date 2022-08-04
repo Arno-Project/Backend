@@ -1,9 +1,15 @@
 # Create your models here.
 from __future__ import annotations
 
+from datetime import datetime
+
+from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from accounts.models import *
+from accounts.models import User, UserCatalogue, SpecialityCatalogue
+from utils.Singleton import Singleton
+from utils.helper_funcs import python_ensure_list
 
 
 class Location(models.Model):
@@ -64,9 +70,9 @@ class Request(models.Model):
         CANCELED = 'CNCL', _('Canceled')
         REJECTED = 'REJC', _('Rejected')
 
-    customer = models.ForeignKey(Customer, null=False, blank=False, on_delete=models.DO_NOTHING)
-    specialist = models.ForeignKey(Specialist, null=True, blank=True, on_delete=models.DO_NOTHING)
-    requested_speciality = models.ForeignKey(Speciality, null=False, blank=False, on_delete=models.DO_NOTHING)
+    customer = models.ForeignKey("accounts.Customer", null=False, blank=False, on_delete=models.DO_NOTHING)
+    specialist = models.ForeignKey("accounts.Specialist", null=True, blank=True, on_delete=models.DO_NOTHING)
+    requested_speciality = models.ForeignKey("accounts.Speciality", null=False, blank=False, on_delete=models.DO_NOTHING)
     desired_start_time = models.DateTimeField(null=False, blank=False)
 
     description = models.TextField(null=True, blank=True)

@@ -3,7 +3,7 @@ from typing import List
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
@@ -105,8 +105,23 @@ class Customer(models.Model):
         verbose_name_plural = u"مشتریان"
 
     def submit_request(self, requested_speciality: "Speciality", requested_date: datetime.datetime, description: str,
-                       address: str):
-        pass
+                       location,catalogue,submit_serializer):
+        data = {'customer': self.id}
+
+        _request = catalogue.search(
+            query={'speciality': {'id':requested_speciality}, 'customer': {'id': self.normal_user.user.id}})
+        if _request.exists():
+            print(_request)
+            raise Exception("You have already requested this speciality")
+
+        data['location'] = location
+        data['description'] = description
+        data['desired_start_time'] = requested_date
+        data['requested_speciality'] = requested_speciality
+        serializer = submit_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        request = serializer.save()
+        return request
 
     def delete_request(self, request):
         pass
