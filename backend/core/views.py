@@ -21,7 +21,6 @@ from notification.notifications import RequestInitialAcceptBySpecialistNotificat
 from utils.permissions import PermissionFactory
 
 
-
 class RequestSearchView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
