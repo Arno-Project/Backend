@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
+from accounts.constants import *
 from utils.Singleton import Singleton
 from utils.helper_funcs import ListAdapter
 
@@ -18,7 +19,7 @@ class User(AbstractUser):
         Specialist = 'S', _('Specialist')
 
     email = models.EmailField(unique=True)
-    phone = PhoneField(blank=False, null=False, verbose_name=u"شماره تلفن همراه", unique=True)
+    phone = PhoneField(blank=False, null=False, verbose_name=PHONE_NUMBER_VERBOSE, unique=True)
     role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
 
     @property
@@ -44,8 +45,8 @@ class User(AbstractUser):
             return self.manager_user_user
 
     class Meta:
-        verbose_name = u"کاربر"
-        verbose_name_plural = u"کاربران"
+        verbose_name = USER_VERBOSE_NAME
+        verbose_name_plural = USER_VERBOSE_NAME_PLURAL
 
     @property
     def full_name(self):
@@ -93,8 +94,8 @@ class NormalUser(models.Model):
         pass
 
     class Meta:
-        verbose_name = u"کاربر عادی"
-        verbose_name_plural = u" کاربران عادی"
+        verbose_name = NORMAL_USER_VERBOSE_NAME
+        verbose_name_plural = NORMAL_USER_VERBOSE_NAME_PLURAL
 
 
 class Customer(models.Model):
@@ -104,13 +105,13 @@ class Customer(models.Model):
         return self.normal_user.__str__()
 
     class Meta:
-        verbose_name = u"مشتری"
-        verbose_name_plural = u"مشتریان"
+        verbose_name = CUSTOMER_VERBOSE_NAME
+        verbose_name_plural = CUSTOMER_VERBOSE_NAME_PLURAL
 
 
 class Speciality(models.Model):
-    title = models.CharField(max_length=100, verbose_name=u"نام تخصص")
-    description = models.TextField(verbose_name=u"توضیحات")
+    title = models.CharField(max_length=100, verbose_name=SPECIALITY_TITLE)
+    description = models.TextField(verbose_name=SPECIALITY_DESCRIPTION)
 
     def get_title(self):
         return self.title
@@ -140,8 +141,8 @@ class SpecialityCatalogue(metaclass=Singleton):
 
 class Specialist(models.Model):
     class Meta:
-        verbose_name = u"متخصص"
-        verbose_name_plural = u"متخصصان"
+        verbose_name = SPECIALIST_VERBOSE_NAME
+        verbose_name_plural = SPECIALIST_VERBOSE_NAME_PLURAL
 
     normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='specialist_normal_user')
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
@@ -183,6 +184,10 @@ class ManagerUser(models.Model):
     def __str__(self):
         return self.user.__str__()
 
+    class Meta:
+        verbose_name = MANAGER_USER_VERBOSE_NAME
+        verbose_name_plural = MANAGER_USER_VERBOSE_NAME_PLURAL
+
 
 class CompanyManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
@@ -193,6 +198,10 @@ class CompanyManager(models.Model):
 
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
+
+    class Meta:
+        verbose_name = COMPANY_MANAGER_VERBOSE_NAME
+        verbose_name_plural = COMPANY_MANAGER_VERBOSE_NAME_PLURAL
 
 
 class TechnicalManager(models.Model):
