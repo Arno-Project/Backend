@@ -18,6 +18,7 @@ from notification.notifications import RequestInitialAcceptBySpecialistNotificat
     SelectSpecialistForRequestNotification, RequestAcceptanceFinalizeBySpecialistNotification, \
     RequestRejectFinalizeBySpecialistNotification
 from utils.permissions import PermissionFactory
+from constants import *
 
 
 class RequestSearchView(generics.GenericAPIView):
@@ -70,7 +71,7 @@ class RequestSubmitView(APIView):
             query={'requested_speciality': requested_speciality, 'customer': {'id': request.user.id}})
         if _request.exists():
             return Response({
-                'error': _('You have already requested this speciality')
+                'error': _(YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
 
         for field in ['location', 'description']:
@@ -96,12 +97,12 @@ class RequestCancelByManagerView(APIView):
         request = RequestCatalogue().search(query={'id': request_id})
         if not request.exists():
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
         request = request[0]
         if request.get_status() == Request.RequestStatus.CANCELED:
             return Response({
-                'error': _('Request already canceled')
+                'error': _(REQUEST_ALREADY_CANCELLED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
 
         request.cancel()
@@ -120,25 +121,26 @@ class RequestInitialAcceptBySpecialistView(APIView):
             request = request.first()
         except:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
 
         if request is None:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
         if request.get_status() == Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER:
             return Response({
-                'error': _('request already in initial acceptance status from specialist')
+                'error': _(REQUEST_ALREADY_IN_INITIAL_ACCEPTANCE_STATUS_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
+        # TODO DUPLICATE
         if request.get_status() != Request.RequestStatus.PENDING:
             return Response({
-                'error': _('Request is not in pending status')
+                'error': _(REQUEST_NOT_IN_PENDING_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
 
         if request.get_requested_speciality() not in user.full_user.get_speciality():
             return Response({
-                'error': _('You does not have required speciality')
+                'error': _(YOU_DONT_HAVE_SPECIALITY_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         return None
 
@@ -173,20 +175,20 @@ class RequestAcceptanceFinalizeByCustomerView(APIView):
             request = request.first()
         except:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
 
         if request is None:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
         if request.customer != customer:
             return Response({
-                'error': _('Request is not for you')
+                'error': _(REQUEST_NOT_FOR_YOU_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         if request.get_status() != Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER:
             return Response({
-                'error': _('Request is not in waiting for customer acceptance from specialist status')
+                'error': _(REQUEST_NOT_IN_WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
 
         return None
@@ -195,17 +197,18 @@ class RequestAcceptanceFinalizeByCustomerView(APIView):
         request_id = request.data.get('request_id')
         if request_id is None:
             return Response({
-                'error': _('request_id is required')
+                'error': _(REQUEST_ID_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         core_request = RequestCatalogue().search(query={"id": request_id})
         if result := self.validate(core_request, request.user.full_user):
             return result
+        # TODO DUPLICATE
         core_request = core_request.first()
 
         is_accept = request.data.get('is_accept')
         if is_accept is None:
             return Response({
-                'error': _('is_accept is required')
+                'error': _(IS_ACCEPT_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         # TODO, More OOP Refactor
         if is_accept == "1":
@@ -232,27 +235,27 @@ class SelectSpecialistForRequestView(APIView):
             request = request.first()
         except:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
         try:
             specialist = specialist.first()
         except:
             return Response({
-                'error': _('Specialist not found')
+                'error': _(SPECIALIST_NOT_FOUND)
             }, status=HTTP_404_NOT_FOUND)
 
         if request is None:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
         if request.get_status() != Request.RequestStatus.PENDING:
             return Response({
-                'error': _('Request is not in pending status')
+                'error': _(REQUEST_NOT_IN_PENDING_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
 
         if request.get_requested_speciality() not in specialist.full_user.get_speciality():
             return Response({
-                'error': _('Selected specialist does not have required speciality')
+                'error': _(SPECIALIST_DONT_HAVE_SPECIALITY_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         return None
 
@@ -261,7 +264,7 @@ class SelectSpecialistForRequestView(APIView):
         specialist_id = request.data.get('specialist_id')
         if specialist_id is None:
             return Response({
-                'error': _('specialist_id is required')
+                'error': _(SPECIALIST_ID_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         core_request = RequestCatalogue().search(query={"id": request_id})
         specialist = UserCatalogue().search(query={"specialist_id": specialist_id})
@@ -293,20 +296,20 @@ class RequestAcceptanceFinalizeBySpecialistView(APIView):
             request = request.first()
         except:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
 
         if request is None:
             return Response({
-                'error': _('Request not found')
+                'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
         if request.get_specialist() != specialist.full_user:
             return Response({
-                'error': _('Request is not for you')
+                'error': _(REQUEST_NOT_FOR_YOU_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         if request.get_status() != Request.RequestStatus.WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST:
             return Response({
-                'error': _('Request is not in waiting for customer acceptance from specialist status')
+                'error': _(REQUEST_NOT_IN_WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
 
         return None
@@ -321,7 +324,7 @@ class RequestAcceptanceFinalizeBySpecialistView(APIView):
         is_accept = request.data.get('is_accept')
         if is_accept is None:
             return Response({
-                'error': _('is_accept is required')
+                'error': _(IS_ACCEPT_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         # TODO, More OOP Refactor
         if is_accept == "1":
@@ -348,7 +351,7 @@ class RequestStatusView(APIView):
         elif request.user.get_role() == User.UserRole.Specialist:
             requests = Request.objects.filter(specialist=request.user.full_user)
         else:
-            return Response(data=_('You are not a customer or a specialist'), status=HTTP_400_BAD_REQUEST)
+            return Response(data=_(NOT_CUSTOMER_OR_SPECIALIST_ERROR), status=HTTP_400_BAD_REQUEST)
         serialized = RequestSerializer(requests, many=True)
         return JsonResponse({
             'requests': serialized.data

@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Customer, Specialist, Speciality, User, UserCatalogue, SpecialityCatalogue
+from core.constants import *
 from utils.Singleton import Singleton
 from utils.helper_funcs import ListAdapter
 
@@ -60,15 +61,15 @@ class LocationCatalogue(metaclass=Singleton):
 
 class Request(models.Model):
     class RequestStatus(models.TextChoices):
-        PENDING = 'PEND', _('pending')
+        PENDING = 'PEND', _(PENDING_STRING)
         WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST = 'WAIC', _(
-            'Waiting for acceptance of customer from specialist')
+            WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST_STRING)
         WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER = 'WAIS', _(
-            'Waiting for acceptance of the specialist from customer')
-        IN_PROGRESS = 'PROG', _('In Progress')
-        DONE = 'DONE', _('Done')
-        CANCELED = 'CNCL', _('Canceled')
-        REJECTED = 'REJC', _('Rejected')
+            WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER_STRING)
+        IN_PROGRESS = 'PROG', _(IN_PROGRESS_STRING)
+        DONE = 'DONE', _(DONE_STRING)
+        CANCELED = 'CNCL', _(CANCELED_STRING)
+        REJECTED = 'REJC', _(REJECTED_STRING)
 
     customer = models.ForeignKey(Customer, null=False, blank=False, on_delete=models.DO_NOTHING)
     specialist = models.ForeignKey(Specialist, null=True, blank=True, on_delete=models.DO_NOTHING)
