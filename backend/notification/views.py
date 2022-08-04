@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from notification.models import NotificationCatalogue, Notification
 from notification.serializers import NotificationSerializer
-from utils.helper_funcs import python_ensure_list
+from utils.helper_funcs import ListAdapter
 
 
 class NotificationView(APIView):
@@ -32,7 +32,7 @@ class NotificationView(APIView):
 
     def post(self, request):
         ids = request.data.get("ids")
-        id_list = python_ensure_list(ids)
+        id_list = ListAdapter().python_ensure_list(ids)
         objs = []
         for id in id_list:
             try:

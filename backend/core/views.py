@@ -1,6 +1,7 @@
 import json
 
 from django.http import JsonResponse
+from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -8,11 +9,9 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
-from accounts.models import User, UserCatalogue, Specialist
+from accounts.models import User, UserCatalogue
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
-from django.utils.translation import gettext_lazy as _
-
 # Create your views here.
 from notification.notifications import RequestInitialAcceptBySpecialistNotification, \
     RequestAcceptanceFinalizeByCustomerNotification, RequestRejectFinalizeByCustomerNotification, BaseNotification, \
@@ -27,10 +26,10 @@ class RequestSearchView(generics.GenericAPIView):
 
     def get(self, request):
         query = json.loads(request.GET.get('q'))
-        if request.user.role == User.UserRole.Customer:
+        if request.user.get_role() == User.UserRole.Customer:
             query['customer'] = {}
             query['customer']['id'] = request.user.id
-        if request.user.role == User.UserRole.Specialist:
+        if request.user.get_role() == User.UserRole.Specialist:
             query['speciality'] = {}
             query['speciality']['id'] = request.user.full_user.get_speciality()
         requests = RequestCatalogue().search(query)
@@ -344,9 +343,9 @@ class RequestStatusView(APIView):
         User.UserRole.Specialist).get_permission_class()]
 
     def get(self, request):
-        if request.user.role == User.UserRole.Customer:
+        if request.user.get_role() == User.UserRole.Customer:
             requests = Request.objects.filter(customer=request.user.full_user)
-        elif request.user.role == User.UserRole.Specialist:
+        elif request.user.get_role() == User.UserRole.Specialist:
             requests = Request.objects.filter(specialist=request.user.full_user)
         else:
             return Response(data=_('You are not a customer or a specialist'), status=HTTP_400_BAD_REQUEST)

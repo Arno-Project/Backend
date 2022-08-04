@@ -1,14 +1,13 @@
-import datetime
 from typing import List
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
 from utils.Singleton import Singleton
-from utils.helper_funcs import python_ensure_list
+from utils.helper_funcs import ListAdapter
 
 
 class User(AbstractUser):
@@ -108,29 +107,6 @@ class Customer(models.Model):
         verbose_name = u"مشتری"
         verbose_name_plural = u"مشتریان"
 
-    def submit_request(self, requested_speciality: "Speciality", requested_date: datetime.datetime, description: str,
-                       address: str):
-        pass
-
-    def delete_request(self, request):
-        pass
-
-    def edit_request(self, request, requested_speciality: "Speciality", requested_date: datetime.datetime,
-                     description: str, address: str):
-        pass
-
-    def select_specialist(self, specialist: "Specialist"):
-        pass
-
-    def accept_specialist(self, request):
-        pass
-
-    def reject_specialist(self, request):
-        pass
-
-    def submit_feedback(self, request, feedback: str, score: int):
-        pass
-
 
 class Speciality(models.Model):
     title = models.CharField(max_length=100, verbose_name=u"نام تخصص")
@@ -155,7 +131,7 @@ class SpecialityCatalogue(metaclass=Singleton):
     def search(self, query):
         result = self.specialities
         if query.get('id'):
-            result = result.filter(pk__in=python_ensure_list(query.get('id')))
+            result = result.filter(pk__in=ListAdapter().python_ensure_list(query.get('id')))
         for field in ['title', 'description']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
@@ -190,24 +166,18 @@ class Specialist(models.Model):
     def remove_document(self):
         pass
 
-    def accept_request(self, request):
-        pass
+    def get_is_validated(self):
+        return self.is_validated
 
-    def reject_request(self, request):
-        pass
-
-    def submit_feedback(self, request, feedback: str, score: int):
-        pass
-
-    def submit_request_fullfillment(self, request):
-        pass
+    def set_validated(self, is_validated: bool):
+        self.is_validated = is_validated
 
 
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
 
     def confirm_specialist(self, specialist: Specialist):
-        specialist.is_validated = True
+        specialist.set_validated(True)
         specialist.save()
 
     def __str__(self):
@@ -244,7 +214,7 @@ class UserCatalogue(metaclass=Singleton):
             return result
         for field in ['id']:
             if query.get(field):
-                result = result.filter(pk__in=python_ensure_list(query[field]))
+                result = result.filter(pk__in=ListAdapter().python_ensure_list(query[field]))
         for field in ['first_name', 'last_name', 'phone']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))

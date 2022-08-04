@@ -9,9 +9,9 @@ import accounts.models
 from accounts.models import NormalUser
 from core.models import Request
 from utils.Singleton import Singleton
-from django.utils.translation import gettext_lazy as _
 
-from utils.helper_funcs import python_ensure_list
+from django.utils.translation import gettext_lazy as _
+from utils.helper_funcs import ListAdapter
 
 
 class EvaluationMetric(models.Model):
@@ -50,7 +50,7 @@ class EvaluationMetricCatalogue(metaclass=Singleton):
             return result
         for field in ['id']:
             if query.get(field):
-                result = result.filter(pk__in=python_ensure_list(query[field]))
+                result = result.filter(pk__in=ListAdapter().python_ensure_list(query[field]))
         for field in ['title', 'description']:
             if query.get(field):
                 result = result.filter(
@@ -115,7 +115,7 @@ class Feedback(models.Model):
         pass
 
 
-class FeedbackCatalogue(Singleton):
+class FeedbackCatalogue(metaclass=Singleton):
     feedbacks = Feedback.objects.all()
 
     def get_feedback_list(self):

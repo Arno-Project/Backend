@@ -11,9 +11,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from accounts.models import User
-from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, EvaluationMetric, FeedbackCatalogue, Feedback
-from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, FeedbackSerializer
-from utils.helper_funcs import python_ensure_list
+from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, EvaluationMetric, \
+    FeedbackCatalogue, Feedback
+from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, \
+    FeedbackSerializer
+from utils.helper_funcs import ListAdapter
 from utils.permissions import PermissionFactory
 
 
@@ -52,7 +54,7 @@ class EvaluationMetricView(APIView):
             ids = request.data.get("id")
         if not ids:
             return JsonResponse({'error': 'No id provided'}, status=HTTP_400_BAD_REQUEST)
-        id_list = python_ensure_list(ids)
+        id_list = ListAdapter().python_ensure_list(ids)
         eval_metrics = EvaluationMetricCatalogue().search({'id': id_list})
         if not eval_metrics:
             return JsonResponse({'error': 'No evaluation metric found'}, status=HTTP_404_NOT_FOUND)
@@ -120,6 +122,7 @@ class SubmitSystemFeedbackReplyView(APIView):
         system_feedback.save(force_update=True)
         return JsonResponse(serializer.data)
 
+
 class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -133,14 +136,13 @@ class FeedbackView(APIView):
             serialized = FeedbackSerializer(feedback)
             return JsonResponse(serialized.data, safe=False)
 
-
     def post(self, request, service_request_id):
         service_request = RequestCatalogue().search(query={'id': service_request_id})
         if not service_request:
             return JsonResponse({'error': 'Request not found'}, status=HTTP_404_NOT_FOUND)
-        
+
         service_request = request.first()
 
         print("FeedbackView post", service_request)
 
-        pass 
+        pass

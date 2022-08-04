@@ -67,7 +67,7 @@ class ManagerRegisterView(generics.GenericAPIView):
         else:
             raise APIException("Invalid Role", status.HTTP_400_BAD_REQUEST)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # TODO Refactor Duplicate
         role = self.kwargs.get('role')
         try:
             self.serializer_class = self.get_serializer_class()
@@ -78,7 +78,7 @@ class ManagerRegisterView(generics.GenericAPIView):
         user = serializer.save()
 
         return Response({
-            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else CustomerFullSerializer)(
+            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else TechnicalManagerFullSerializer)(
                 user).data[
                 'user'],
             'role': role,
@@ -113,7 +113,7 @@ class MyAccountView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, format=None):
+    def get(self, request):
         return Response({
             'user': UserFullSerializer(request.user).data,
             'role': request.user.get_role()
@@ -128,7 +128,9 @@ class EditProfileView(APIView):
         if user_id == '':
             user_id = request.user.id
         if not (
-                request.user.role == User.UserRole.CompanyManager or request.user.role == User.UserRole.TechnicalManager):
+                request.user.get_role() == User.UserRole.CompanyManager
+                or request.user.get_role() == User.UserRole.TechnicalManager
+        ):
             if int(request.user.id) != int(user_id):
                 return Response({'error': "You can't edit other users accounts"}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.get(id=user_id)
@@ -144,7 +146,6 @@ class EditProfileView(APIView):
             user.set_password(request.data['password'])
 
         user.save()
-        serializer = UserFullSerializer(user)
 
         return Response({
             'user': UserFullSerializer(user).data,
@@ -162,13 +163,13 @@ class AccountsView(APIView):
         CompanyManagerFullSerializer | CompanyManagerSerializer |
         TechnicalManagerFullSerializer | TechnicalManagerSerializer
         ]:
-        if user.role == User.UserRole.Customer:
+        if user.get_role() == User.UserRole.Customer:
             return CustomerFullSerializer if manager else CustomerSerializer
-        elif user.role == User.UserRole.Specialist:
+        elif user.get_role() == User.UserRole.Specialist:
             return SpecialistFullSerializer if manager else SpecialistSerializer
-        elif user.role == User.UserRole.CompanyManager:
+        elif user.get_role() == User.UserRole.CompanyManager:
             return CompanyManagerFullSerializer if manager else CompanyManagerSerializer
-        elif user.role == User.UserRole.TechnicalManager:
+        elif user.get_role() == User.UserRole.TechnicalManager:
             return TechnicalManagerFullSerializer if manager else TechnicalManagerSerializer
 
     def get(self, request):
@@ -221,7 +222,7 @@ class SpecialityAddRemoveView(APIView):
         print(request.data)
         speciality_id = request.data.get('speciality_id')
         if 'specialist_id' not in request.POST:
-            if request.user.role == User.UserRole.Specialist:
+            if request.user.get_role() == User.UserRole.Specialist:
                 specialist_id = request.user.id
             else:
                 raise APIException("Invalid Request", status.HTTP_400_BAD_REQUEST)
@@ -256,7 +257,7 @@ class ConfirmSpecialistView(APIView):
                 0].full_user
         except IndexError:
             raise APIException("Not Found", status.HTTP_404_NOT_FOUND)
-        if specialist.is_validated:
+        if specialist.get_is_validated():
             raise APIException("Specialist already confirmed", status.HTTP_400_BAD_REQUEST)
 
         request.user.general_user.confirm_specialist(specialist)

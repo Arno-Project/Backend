@@ -1,9 +1,15 @@
 # Create your models here.
 from __future__ import annotations
 
+from datetime import datetime
+
+from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from accounts.models import *
+from accounts.models import Customer, Specialist, Speciality, User, UserCatalogue, SpecialityCatalogue
+from utils.Singleton import Singleton
+from utils.helper_funcs import ListAdapter
 
 
 class Location(models.Model):
@@ -149,7 +155,7 @@ class Request(models.Model):
         self.save()
 
     def cancel(self):
-        self.status = Request.RequestStatus.CANCELED
+        self.set_status(Request.RequestStatus.CANCELED)
         self.save()
 
 
@@ -160,7 +166,7 @@ class RequestCatalogue(metaclass=Singleton):
         result = self.requests
 
         if query.get('id'):
-            result = result.filter(pk__in=python_ensure_list(query['id']))
+            result = result.filter(pk__in=ListAdapter().python_ensure_list(query['id']))
 
         if query.get('customer'):
             customer_query = {
@@ -205,61 +211,6 @@ class RequestCatalogue(metaclass=Singleton):
 
     def get_requests(self):
         return self.requests
-
-    # TODO Maybe use this, but this is very dirty
-    # def search_by_customer(self, query) -> RequestCatalogue:
-    #     customer_query = {
-    #         **query,
-    #         'role': User.UserRole.Customer
-    #     }
-    #     users = UserCatalogue().search(query=customer_query)
-    #     self.result = self.result.filter(customer__normal_user__user__in=users)
-    #     return self
-    #
-    # def search_by_specialist(self, query) -> RequestCatalogue:
-    #
-    #     specialist_query = {
-    #         **query,
-    #         'role': User.UserRole.Specialist
-    #     }
-    #     users = UserCatalogue().search(query=specialist_query)
-    #     self.result = self.result.filter(specialist_normal_user__user__in=users)
-    #     return self
-    #
-    # def search_by_speciality(self, query) -> RequestCatalogue:
-    #
-    #     specialities = SpecialityCatalogue().search(query=query)
-    #     self.result = self.result.filter(requested_speciality__in=specialities)
-    #     return self
-    #
-    # def search_by_location(self, query) -> RequestCatalogue:
-    #     locations = LocationCatalogue().search(query=query)
-    #     print(locations)
-    #     self.result = self.result.filter(location__in=locations)
-    #     return self
-    #
-    # def search_by_description(self, description) -> RequestCatalogue:
-    #     self.result = self.result.filter(description__icontains=description)
-    #     return self
-    #
-    # def search_by_status(self, status) -> RequestCatalogue:
-    #     self.result = self.result.filter(status__iexact=status)
-    #     return self
-    #
-    # def search_by_time(self, query) -> RequestCatalogue:
-    #     for field in ['desired_start_time_gte', 'accepted_at_gte', 'completed_at_gte']:
-    #         if query.get(field):
-    #             self.result = self.result.filter(**{'_'.join(query.get(field).split('_')[:-1]) + "__gte": query.get(field)})
-    #
-    #     for field in ['desired_start_time_lte', 'accepted_at_lte', 'completed_at_lte']:
-    #         if query.get(field):
-    #             self.result = self.result.filter(**{'_'.join(query.get(field).split('_')[:-1]) + "__lte": query.get(field)})
-    #     return self
-    #
-    # def evaluate_query(self):
-    #     result = copy(self.result)
-    #     self.result = None
-    #     return result
 
     def sort_by_time(self):
         return self.requests.order_by('desired_start_time')
