@@ -20,13 +20,13 @@ PHONE_NUMBER_VERBOSE = u'شماره تلفن همراه'
 
 INVALID_ROLE = u'نقش نامعتبر'
 
-EDIT_OTHER_USER_ACCOUNT_ERROR = u'شما نمیتوانید حساب کاربری دیگری را ویرایش کنید'
+EDIT_OTHER_USER_ACCOUNT_ERROR = u"شما نمیتوانید حساب کاربری دیگری را ویرایش کنید"
 
-OLD_PASSWORD_NOT_PROVIDED_ERROR=u'رمز عبور قدیمی را وارد نکرده اید'
-OLD_PASSWORD_NOT_MATCH_ERROR = u'رمز عبور قدیمی اشتباه است'
-SPECIALITY_EXISTS_ERROR= u'تخصص تکراری است'
+OLD_PASSWORD_NOT_PROVIDED_ERROR = u"رمز عبور قدیمی را وارد نکرده اید"
+OLD_PASSWORD_NOT_MATCH_ERROR = u"رمز عبور قدیمی اشتباه است"
+SPECIALITY_EXISTS_ERROR = u"تخصص تکراری است"
 
-INVALID_REQUEST = u'درخواست نامعتبر'
+INVALID_REQUEST = u"درخواست نامعتبر"
 
-SPECIALIST_NOT_FOUND_ERROR = u'متخصص یافت نشد'
-SPECIALIST_ALREADY_CONFIRMED_ERROR = u'متخصص پیش‌تر تایید شده است'
+SPECIALIST_NOT_FOUND_ERROR = u"متخصص یافت نشد"
+SPECIALIST_ALREADY_CONFIRMED_ERROR = u"متخصص پیش‌تر تایید شده است"
