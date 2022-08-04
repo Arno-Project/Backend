@@ -10,6 +10,7 @@ from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
 from accounts.models import User, UserCatalogue
+from core.constants import *
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
 # Create your views here.
@@ -18,7 +19,7 @@ from notification.notifications import RequestInitialAcceptBySpecialistNotificat
     SelectSpecialistForRequestNotification, RequestAcceptanceFinalizeBySpecialistNotification, \
     RequestRejectFinalizeBySpecialistNotification
 from utils.permissions import PermissionFactory
-from constants import *
+
 
 
 class RequestSearchView(generics.GenericAPIView):

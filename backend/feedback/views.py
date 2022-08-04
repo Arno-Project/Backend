@@ -14,7 +14,7 @@ from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySe
     FeedbackSerializer
 from utils.helper_funcs import ListAdapter
 from utils.permissions import PermissionFactory
-from constants import *
+from feedback.constants import *
 
 
 class EvaluationMetricView(APIView):
