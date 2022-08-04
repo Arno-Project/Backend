@@ -14,7 +14,7 @@ class Notification(models.Model):
 
     title = models.CharField(max_length=100, null=False, blank=True, default='')
     message = models.TextField(null=True, blank=True, default=None)
-    link = models.URLField(null=True, blank=True, default=None)
+    link = models.CharField(null=True, blank=True, default=None, max_length=200)
     date = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(null=False, blank=False, default=False)
     user = models.ForeignKey(User, null=False, blank=False, on_delete=models.CASCADE)
