@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
+from notification.constants import *
 from notification.models import NotificationCatalogue, Notification
 from notification.serializers import NotificationSerializer
 from utils.helper_funcs import ListAdapter
@@ -20,7 +21,7 @@ class NotificationView(APIView):
             notification = NotificationCatalogue().get_by_id(notification_id)
             if notification.get_user() != request.user:
                 return Response({
-                    'error': _('Notification not found')
+                    'error': _(NOTIFICATION_NOT_FOUND_ERROR)
                 }, status=HTTP_404_NOT_FOUND)
         else:
             notification = NotificationCatalogue().get_unread(request.user)
@@ -31,7 +32,7 @@ class NotificationView(APIView):
         return JsonResponse({"notifications": serializer.data})
 
     def post(self, request):
-        ids = request.data.get("ids")
+        ids = request.data.get('ids')
         id_list = ListAdapter().python_ensure_list(ids)
         objs = []
         for id in id_list:
