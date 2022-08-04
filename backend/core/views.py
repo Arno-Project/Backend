@@ -1,4 +1,5 @@
 import json
+from abc import ABC
 
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
@@ -163,68 +164,6 @@ class RequestInitialAcceptBySpecialistView(APIView):
         })
 
 
-class RequestAcceptanceFinalizeByCustomerView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
-
-    notification_builder_accept: BaseNotification = RequestAcceptanceFinalizeByCustomerNotification
-    notification_builder_reject: BaseNotification = RequestRejectFinalizeByCustomerNotification
-
-    def validate(self, request, customer):
-        try:
-            request = request.first()
-        except:
-            return Response({
-                'error': _(REQUEST_NOT_FOUND_ERROR)
-            }, status=HTTP_404_NOT_FOUND)
-
-        if request is None:
-            return Response({
-                'error': _(REQUEST_NOT_FOUND_ERROR)
-            }, status=HTTP_404_NOT_FOUND)
-        if request.customer != customer:
-            return Response({
-                'error': _(REQUEST_NOT_FOR_YOU_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
-        if request.get_status() != Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER:
-            return Response({
-                'error': _(REQUEST_NOT_IN_WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
-
-        return None
-
-    def post(self, request):
-        request_id = request.data.get('request_id')
-        if request_id is None:
-            return Response({
-                'error': _(REQUEST_ID_REQUIRED_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
-        core_request = RequestCatalogue().search(query={"id": request_id})
-        if result := self.validate(core_request, request.user.full_user):
-            return result
-        # TODO DUPLICATE
-        core_request = core_request.first()
-
-        is_accept = request.data.get('is_accept')
-        if is_accept is None:
-            return Response({
-                'error': _(IS_ACCEPT_REQUIRED_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
-        # TODO, More OOP Refactor
-        if is_accept == "1":
-            core_request.set_status(Request.RequestStatus.IN_PROGRESS)
-            self.notification_builder_reject(core_request).build()
-        else:
-            core_request.set_status(Request.RequestStatus.PENDING)
-            core_request.set_specialist(None)
-            self.notification_builder_accept(core_request).build()
-
-        core_request.save()
-        return JsonResponse({
-            'request': RequestSerializer(core_request).data
-        })
-
-
 class SelectSpecialistForRequestView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
@@ -284,12 +223,90 @@ class SelectSpecialistForRequestView(APIView):
         })
 
 
-class RequestAcceptanceFinalizeBySpecialistView(APIView):
+class RequestAcceptanceFinalizeView(APIView, ABC):
+    notification_builder_accept = None
+    notification_builder_reject = None
+
+    def __init__(self, notification_builder_accept, notification_builder_reject, **kwargs):
+        super().__init__(**kwargs)
+        self.notification_builder_accept = notification_builder_accept
+        self.notification_builder_reject = notification_builder_reject
+
+    def validate(self, r, c):
+        pass
+
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        if request_id is None:
+            return Response({
+                'error': _(REQUEST_ID_REQUIRED_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+        core_request = RequestCatalogue().search(query={"id": request_id})
+        if result := self.validate(core_request, request.user.full_user):
+            return result
+
+        core_request = core_request.first()
+
+        is_accept = request.data.get('is_accept')
+        if is_accept is None:
+            return Response({
+                'error': _(IS_ACCEPT_REQUIRED_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+        # TODO, More OOP Refactor
+        if is_accept == "1":
+            core_request.set_status(Request.RequestStatus.IN_PROGRESS)
+            self.notification_builder_accept(core_request).build()
+        else:
+            core_request.set_status(Request.RequestStatus.PENDING)
+            core_request.set_specialist(None)
+            self.notification_builder_reject(core_request).build()
+
+
+        core_request.save()
+        return JsonResponse({
+            'request': RequestSerializer(core_request).data
+        })
+
+
+class RequestAcceptanceFinalizeByCustomerView(RequestAcceptanceFinalizeView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+
+    def __init__(self):
+        super().__init__(notification_builder_accept=RequestAcceptanceFinalizeByCustomerNotification,
+                         notification_builder_reject=RequestRejectFinalizeByCustomerNotification)
+
+    def validate(self, request, customer):
+        try:
+            request = request.first()
+        except:
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_404_NOT_FOUND)
+
+        if request is None:
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_404_NOT_FOUND)
+        if request.customer != customer:
+            return Response({
+                'error': _(REQUEST_NOT_FOR_YOU_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+        if request.get_status() != Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER:
+            return Response({
+                'error': _(REQUEST_NOT_IN_WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+
+        return None
+
+
+class RequestAcceptanceFinalizeBySpecialistView(RequestAcceptanceFinalizeView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class()]
 
-    notification_builder_accept: BaseNotification = RequestAcceptanceFinalizeBySpecialistNotification
-    notification_builder_reject: BaseNotification = RequestRejectFinalizeBySpecialistNotification
+    def __init__(self):
+        super().__init__(notification_builder_accept=RequestAcceptanceFinalizeBySpecialistNotification,
+                         notification_builder_reject=RequestRejectFinalizeBySpecialistNotification)
 
     def validate(self, request, specialist):
         try:
@@ -303,7 +320,7 @@ class RequestAcceptanceFinalizeBySpecialistView(APIView):
             return Response({
                 'error': _(REQUEST_NOT_FOUND_ERROR)
             }, status=HTTP_404_NOT_FOUND)
-        if request.get_specialist() != specialist.full_user:
+        if request.get_specialist() != specialist:
             return Response({
                 'error': _(REQUEST_NOT_FOR_YOU_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
@@ -313,31 +330,6 @@ class RequestAcceptanceFinalizeBySpecialistView(APIView):
             }, status=HTTP_400_BAD_REQUEST)
 
         return None
-
-    def post(self, request):
-        request_id = request.data.get('request_id')
-        core_request = RequestCatalogue().search(query={"id": request_id})
-        if result := self.validate(core_request, request.user):
-            return result
-        core_request = core_request.first()
-
-        is_accept = request.data.get('is_accept')
-        if is_accept is None:
-            return Response({
-                'error': _(IS_ACCEPT_REQUIRED_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
-        # TODO, More OOP Refactor
-        if is_accept == "1":
-            core_request.set_status(Request.RequestStatus.IN_PROGRESS)
-            self.notification_builder_reject(core_request).build()
-        else:
-            core_request.set_status(Request.RequestStatus.PENDING)
-            core_request.set_specialist(None)
-            self.notification_builder_accept(core_request).build()
-        core_request.save()
-        return JsonResponse({
-            'request': RequestSerializer(core_request).data
-        })
 
 
 class RequestStatusView(APIView):
