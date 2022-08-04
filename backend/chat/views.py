@@ -6,11 +6,13 @@ from django.http import JsonResponse
 from chat.models import MessageCatalogue, Message
 from chat.serializers import MessageSerializer
 from accounts.models import User, NormalUser
+from notification.notifications import BaseNotification, NewMessageNotification
 
 
 class ChatsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    notification_builder: BaseNotification = NewMessageNotification
 
     def get(self, request, peer_id=None):
         user = request.user
@@ -31,7 +33,6 @@ class ChatsView(APIView):
         if not peer_id:
             return JsonResponse()
 
-        print("POST CHAT", request, peer_id, request.data)
         text = request.data.get('text', None)
         if not text:
             return JsonResponse()
@@ -45,6 +46,8 @@ class ChatsView(APIView):
         message = Message(receiver=peer, sender=user_n, text=text,
                           type=Message.MessageType.User)
         message.save()
+
+        self.notification_builder(message).build()
 
         serialized = MessageSerializer(message)
         return JsonResponse(serialized.data, safe=False)

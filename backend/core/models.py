@@ -184,7 +184,6 @@ class RequestCatalogue(metaclass=Singleton):
 
         if query.get('location'):
             locations = LocationCatalogue().search(query=query.get('location'))
-            print(locations)
             result = result.filter(location__in=locations)
 
         if query.get('status'):

@@ -48,6 +48,10 @@ class User(AbstractUser):
         verbose_name = u"کاربر"
         verbose_name_plural = u"کاربران"
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
     def get_role(self):
         return self.role
 

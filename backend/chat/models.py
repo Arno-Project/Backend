@@ -38,9 +38,6 @@ class MessageCatalogue(metaclass=Singleton):
     messages = Message.objects.all()
 
     def search(self, user: NormalUser, peer_id:int = None):
-        print(self.messages)
-        for m in self.messages:
-            print("---", m, m.sender.user.pk, m.receiver.user.pk, user.pk)
         if not peer_id: 
             return self.messages\
                 .filter(Q(sender__user__pk=user.pk) | Q(receiver__user__pk=user.pk))\

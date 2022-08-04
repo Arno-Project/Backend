@@ -23,7 +23,6 @@ class NotificationView(APIView):
                     'error': _('Notification not found')
                 }, status=HTTP_404_NOT_FOUND)
         else:
-            print("many")
             notification = NotificationCatalogue().get_unread(request.user)
             many = True
 
@@ -31,11 +30,8 @@ class NotificationView(APIView):
 
         return JsonResponse({"notifications": serializer.data})
 
-    def post(self, request, notification_id=''):
-        if notification_id:
-            ids = [int(notification_id)]
-        else:
-            ids = request.data.get("id")
+    def post(self, request):
+        ids = request.data.get("ids")
         id_list = python_ensure_list(ids)
         objs = []
         for id in id_list:
