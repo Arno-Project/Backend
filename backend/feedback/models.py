@@ -18,7 +18,7 @@ class EvaluationMetric(models.Model):
     title = models.CharField(max_length=255, null=False, blank=False)
     description = models.TextField(null=False, blank=False)
     user_type = models.CharField(max_length=2, choices=accounts.models.User.UserRole.choices,
-                                 default=accounts.models.User.UserRole.choices)
+                                 default=accounts.models.User.UserRole.Customer)
 
     def get_title(self):
         return self.title
