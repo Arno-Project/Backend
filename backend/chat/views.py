@@ -33,7 +33,6 @@ class ChatsView(APIView):
         if not peer_id:
             return JsonResponse()
 
-        print("POST CHAT", request, peer_id, request.data)
         text = request.data.get('text', None)
         if not text:
             return JsonResponse()

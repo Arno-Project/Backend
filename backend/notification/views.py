@@ -23,7 +23,6 @@ class NotificationView(APIView):
                     'error': _('Notification not found')
                 }, status=HTTP_404_NOT_FOUND)
         else:
-            print("many")
             notification = NotificationCatalogue().get_unread(request.user)
             many = True
 
