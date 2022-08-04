@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import Type
 
 from django.contrib.auth import login
@@ -13,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.permissions import PermissionFactory
-from .constants import *
+from accounts.constants import *
 from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
     TechnicalManager, Customer, SpecialityCatalogue
 from .serializers import CompanyManagerSerializer, CustomerSerializer, \
@@ -25,17 +26,21 @@ from .serializers import CompanyManagerSerializer, CustomerSerializer, \
 
 # Create your views here.
 
+class RegisterView(generics.GenericAPIView, ABC):
+    first_serializer = None
+    second_serializer = None
+    first_serializer_role = None
+    attribute_name = ''
 
-class RegisterView(generics.GenericAPIView):
+    def __init__(self, first_serializer, second_serializer, first_serializer_role, attribute_name):
+        super().__init__()
+        self.first_serializer = first_serializer
+        self.second_serializer = second_serializer
+        self.first_serializer_role = first_serializer_role
+        self.attribute_name = attribute_name
 
     def get_serializer_class(self):
-        role = self.kwargs.get('role')
-        if role == User.UserRole.Specialist:
-            return RegisterSerializerFactory(Specialist, NormalUser).get_serializer()
-        elif role == User.UserRole.Customer:
-            return RegisterSerializerFactory(Customer, NormalUser).get_serializer()
-        else:
-            raise APIException(INVALID_ROLE, status.HTTP_400_BAD_REQUEST)
+        pass
 
     def post(self, request, *args, **kwargs):
         role = self.kwargs.get('role')
@@ -48,16 +53,36 @@ class RegisterView(generics.GenericAPIView):
         user = serializer.save()
 
         return JsonResponse({
-            **(SpecialistFullSerializer if role == User.UserRole.Specialist else CustomerFullSerializer)(user).data[
+            **(self.first_serializer if role == self.first_serializer_role else self.second_serializer)(user).data[
                 'user'],
             'role': role,
-            'token': AuthToken.objects.create(user.normal_user.user)[1]
+            'token': AuthToken.objects.create(getattr(user, self.attribute_name).user)[1]
         })
 
 
-class ManagerRegisterView(generics.GenericAPIView):
+class NormalRegisterView(RegisterView):
+
+    def __init__(self):
+        super(NormalRegisterView, self).__init__(SpecialistFullSerializer, CustomerFullSerializer,
+                                                 User.UserRole.Specialist, 'normal_user')
+
+    def get_serializer_class(self):
+        role = self.kwargs.get('role')
+        if role == User.UserRole.Specialist:
+            return RegisterSerializerFactory(Specialist, NormalUser).get_serializer()
+        elif role == User.UserRole.Customer:
+            return RegisterSerializerFactory(Customer, NormalUser).get_serializer()
+        else:
+            raise APIException(INVALID_ROLE, status.HTTP_400_BAD_REQUEST)
+
+
+class ManagerRegisterView(RegisterView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+
+    def __init__(self):
+        super(ManagerRegisterView, self).__init__(CompanyManagerFullSerializer, TechnicalManagerFullSerializer,
+                                                  User.UserRole.CompanyManager, 'manager_user')
 
     def get_serializer_class(self):
         role = self.kwargs.get('role')
@@ -67,24 +92,6 @@ class ManagerRegisterView(generics.GenericAPIView):
             return RegisterSerializerFactory(TechnicalManager, ManagerUser).get_serializer()
         else:
             raise APIException(INVALID_ROLE, status.HTTP_400_BAD_REQUEST)
-
-    def post(self, request, *args, **kwargs):  # TODO Refactor Duplicate
-        role = self.kwargs.get('role')
-        try:
-            self.serializer_class = self.get_serializer_class()
-        except APIException as e:
-            return JsonResponse({'error': INVALID_ROLE}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        return JsonResponse({
-            **(CompanyManagerFullSerializer if role == User.UserRole.CompanyManager else TechnicalManagerFullSerializer)(
-                user).data[
-                'user'],
-            'role': role,
-            'token': AuthToken.objects.create(user.manager_user.user)[1]
-        })
 
 
 class LoginView(KnoxLoginView):
@@ -232,7 +239,6 @@ class SpecialityAddRemoveView(APIView):
         speciality = Speciality.objects.get(pk=speciality_id)
         specialist = UserCatalogue().search(query={'id': specialist_id, 'role': "S"})[
             0].full_user
-        # specialist=Specialist.objects.filter(normal_user__user_id=specialist_id).first()
         if is_add:
             specialist.add_speciality(speciality)
         else:

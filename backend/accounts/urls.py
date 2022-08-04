@@ -3,7 +3,7 @@ from django.urls import path
 from accounts.views import *
 
 urlpatterns = [
-    path('register/<slug:role>/', RegisterView.as_view(), name='register'),
+    path('register/<slug:role>/', NormalRegisterView.as_view(), name='register'),
     path('manager/register/<slug:role>/', ManagerRegisterView.as_view(), name='manager-register'),
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
