@@ -1,22 +1,20 @@
 import json
 
 from django.http import JsonResponse
-from core.models import RequestCatalogue
-
 # Create your views here.
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
-from rest_framework.response import Response
 
 from accounts.models import User
-from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, EvaluationMetric, \
-    FeedbackCatalogue, Feedback
+from core.models import RequestCatalogue
+from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, FeedbackCatalogue
 from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, \
     FeedbackSerializer
 from utils.helper_funcs import ListAdapter
 from utils.permissions import PermissionFactory
+from constants import *
 
 
 class EvaluationMetricView(APIView):
@@ -29,7 +27,7 @@ class EvaluationMetricView(APIView):
             ids = [int(evaluation_metric_id)]
             eval_metric = EvaluationMetricCatalogue().search(query={'id': ids})
             if not eval_metric:
-                return JsonResponse({'error': 'No evaluation metric found'}, status=HTTP_404_NOT_FOUND)
+                return JsonResponse({'error': NO_EVALUATION_METRIC_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
         else:
             try:
                 query = json.loads(request.GET.get('q'))
@@ -53,22 +51,22 @@ class EvaluationMetricView(APIView):
         else:
             ids = request.data.get("id")
         if not ids:
-            return JsonResponse({'error': 'No id provided'}, status=HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': NO_ID_PROVIDED_ERROR}, status=HTTP_400_BAD_REQUEST)
         id_list = ListAdapter().python_ensure_list(ids)
         eval_metrics = EvaluationMetricCatalogue().search({'id': id_list})
         if not eval_metrics:
-            return JsonResponse({'error': 'No evaluation metric found'}, status=HTTP_404_NOT_FOUND)
+            return JsonResponse({'error': NO_EVALUATION_METRIC_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
         output_ids = list(map(lambda x: x.id, eval_metrics))
         eval_metrics.delete()
         return JsonResponse({'ids': output_ids})
 
     def put(self, request, evaluation_metric_id='', *args, **kwargs):
         if not evaluation_metric_id:
-            return JsonResponse({'error': 'No id provided'}, status=HTTP_400_BAD_REQUEST)
+            return JsonResponse({'error': NO_ID_PROVIDED_ERROR}, status=HTTP_400_BAD_REQUEST)
         try:
             eval_metric = EvaluationMetricCatalogue().search(query={'id': evaluation_metric_id}).first()
         except:
-            return JsonResponse({'error': 'No evaluation metric found'}, status=HTTP_404_NOT_FOUND)
+            return JsonResponse({'error': NO_EVALUATION_METRIC_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
         serializer = EvaluationMetricSerializer(eval_metric, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -131,7 +129,7 @@ class FeedbackView(APIView):
         if service_request_id:
             feedback = FeedbackCatalogue().serach_by_request(service_request_id, request.user.id)
             if not feedback:
-                return JsonResponse({'error': 'Feedback not found'}, status=HTTP_404_NOT_FOUND)
+                return JsonResponse({'error': FEEDBACK_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
 
             serialized = FeedbackSerializer(feedback)
             return JsonResponse(serialized.data, safe=False)
@@ -139,7 +137,7 @@ class FeedbackView(APIView):
     def post(self, request, service_request_id):
         service_request = RequestCatalogue().search(query={'id': service_request_id})
         if not service_request:
-            return JsonResponse({'error': 'Request not found'}, status=HTTP_404_NOT_FOUND)
+            return JsonResponse({'error': REQUEST_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
 
         service_request = request.first()
 
