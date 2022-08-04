@@ -1,15 +1,18 @@
 import json
 
 from django.http import JsonResponse
+from core.models import RequestCatalogue
+
 # Create your views here.
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from accounts.models import User
-from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, EvaluationMetric
-from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer
+from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, EvaluationMetric, FeedbackCatalogue, Feedback
+from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, FeedbackSerializer
 from utils.helper_funcs import python_ensure_list
 from utils.permissions import PermissionFactory
 
@@ -116,3 +119,28 @@ class SubmitSystemFeedbackReplyView(APIView):
         system_feedback.set_reply(reply)
         system_feedback.save(force_update=True)
         return JsonResponse(serializer.data)
+
+class FeedbackView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, service_request_id=None):
+        if service_request_id:
+            feedback = FeedbackCatalogue().serach_by_request(service_request_id, request.user.id)
+            if not feedback:
+                return JsonResponse({'error': 'Feedback not found'}, status=HTTP_404_NOT_FOUND)
+
+            serialized = FeedbackSerializer(feedback)
+            return JsonResponse(serialized.data, safe=False)
+
+
+    def post(self, request, service_request_id):
+        service_request = RequestCatalogue().search(query={'id': service_request_id})
+        if not service_request:
+            return JsonResponse({'error': 'Request not found'}, status=HTTP_404_NOT_FOUND)
+        
+        service_request = request.first()
+
+        print("FeedbackView post", service_request)
+
+        pass 

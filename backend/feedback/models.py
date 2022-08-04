@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models import Q
 
 import accounts.models
+from accounts.models import NormalUser
 from core.models import Request
 from utils.Singleton import Singleton
 from django.utils.translation import gettext_lazy as _
@@ -52,7 +53,8 @@ class EvaluationMetricCatalogue(metaclass=Singleton):
                 result = result.filter(pk__in=python_ensure_list(query[field]))
         for field in ['title', 'description']:
             if query.get(field):
-                result = result.filter(Q(**{field + '__icontains': query[field]}))
+                result = result.filter(
+                    Q(**{field + '__icontains': query[field]}))
         if query.get('user_type'):
             print(query.get('user_type'))
             result = result.filter(user_type__iexact=query['user_type'])
@@ -92,6 +94,7 @@ class Feedback(models.Model):
     request = models.ForeignKey(Request, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     metric_scores = models.ManyToManyField(MetricScore, blank=True, null=True)
+    user = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
 
     def get_description(self):
         return self.description
@@ -118,8 +121,11 @@ class FeedbackCatalogue(Singleton):
     def get_feedback_list(self):
         return self.feedbacks
 
-    def serach_by_request(self, request):
-        pass
+    def serach_by_request(self, request_id, user_id) -> Feedback:
+        try:
+            return self.feedbacks.get(request__id=request_id, user__user__id=user_id)
+        except Feedback.DoesNotExist:
+            return None
 
     def search_after_time(self, time):
         pass
@@ -131,7 +137,8 @@ class FeedbackCatalogue(Singleton):
 class SystemFeedbackReply(models.Model):
     text = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(accounts.models.TechnicalManager, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        accounts.models.TechnicalManager, on_delete=models.CASCADE)
 
     def get_user(self):
         return self.user
@@ -155,10 +162,14 @@ class SystemFeedback(models.Model):
 
     text = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    type = models.CharField(max_length=1, choices=SystemFeedbackType.choices, default=SystemFeedbackType.Other)
-    status = models.CharField(max_length=1, choices=SystemFeedbackStatus.choices, default=SystemFeedbackStatus.New)
-    user = models.ForeignKey(accounts.models.NormalUser, on_delete=models.CASCADE)
-    reply = models.ForeignKey(SystemFeedbackReply, on_delete=models.CASCADE, null=True, blank=True)
+    type = models.CharField(
+        max_length=1, choices=SystemFeedbackType.choices, default=SystemFeedbackType.Other)
+    status = models.CharField(
+        max_length=1, choices=SystemFeedbackStatus.choices, default=SystemFeedbackStatus.New)
+    user = models.ForeignKey(accounts.models.NormalUser,
+                             on_delete=models.CASCADE)
+    reply = models.ForeignKey(
+        SystemFeedbackReply, on_delete=models.CASCADE, null=True, blank=True)
 
     def get_text(self):
         return self.text
