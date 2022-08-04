@@ -31,11 +31,8 @@ class NotificationView(APIView):
 
         return JsonResponse({"notifications": serializer.data})
 
-    def post(self, request, notification_id=''):
-        if notification_id:
-            ids = [int(notification_id)]
-        else:
-            ids = request.data.get("id")
+    def post(self, request):
+        ids = request.data.get("ids")
         id_list = python_ensure_list(ids)
         objs = []
         for id in id_list:
