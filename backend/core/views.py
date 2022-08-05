@@ -1,3 +1,4 @@
+import datetime
 import json
 from abc import ABC
 
@@ -65,7 +66,6 @@ class RequestSubmitView(APIView):
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
 
     def post(self, request, *args, **kwargs):
-
         data = {'customer': UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user.id}
         requested_speciality = request.data['requested_speciality']
         _request = RequestCatalogue().search(
@@ -259,8 +259,8 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
         else:
             core_request.set_status(Request.RequestStatus.PENDING)
             core_request.set_specialist(None)
+            core_request.set_accepted_at(datetime.datetime.now())  # TODO check timezone
             self.notification_builder_reject(core_request).build()
-
 
         core_request.save()
         return JsonResponse({

@@ -64,12 +64,6 @@ class EvaluationMetricCatalogue(metaclass=Singleton):
     def get_evaluation_metric_list(self):
         return self.metrics
 
-    def search_by_title(self, title: str):
-        return self.metrics.filter(title__icontains=title)
-
-    def search_by_user_type(self, user_type):
-        return self.metrics.filter(user_type__icontains=user_type)
-
 
 class MetricScore(models.Model):
     metric = models.ForeignKey(EvaluationMetric, on_delete=models.CASCADE)

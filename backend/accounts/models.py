@@ -148,6 +148,7 @@ class Specialist(models.Model):
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
     is_validated = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.normal_user.__str__()
@@ -173,6 +174,11 @@ class Specialist(models.Model):
     def set_validated(self, is_validated: bool):
         self.is_validated = is_validated
 
+    def get_is_active(self):
+        return self.is_active
+
+    def set_active(self, is_active: bool):
+        self.is_active = is_active
 
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
@@ -242,5 +248,4 @@ class UserCatalogue(metaclass=Singleton):
 
         return result
 
-    def sort_by_join_date(self, ascending):
-        pass
+

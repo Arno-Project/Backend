@@ -41,6 +41,9 @@ class Notification(models.Model):
     def get_link(self):
         return self.link
 
+    def get_date(self):
+        return self.date
+
     def set_title(self, title):
         self.title = title
 
