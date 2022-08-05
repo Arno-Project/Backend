@@ -12,7 +12,7 @@ urlpatterns = [
     path('edit/', EditProfileView.as_view(), name='edit-profile'),
     path('all/', AccountsView.as_view(), name='all-accounts'),
     path('speciality/', SpecialityView.as_view(), name='speciality'),
-    path('speciality/add/', SpecialityAddRemoveView.as_view(), name='add-speciality'),
+    path('speciality/<slug:operation>/', SpecialityAddRemoveView.as_view(), name='add-remove-speciality'),
     path('specialist/confirm/',ConfirmSpecialistView.as_view(), name='confirm-specialist'),
 
 ]
