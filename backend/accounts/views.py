@@ -151,6 +151,14 @@ class EditProfileView(APIView):
                 return JsonResponse({'error': OLD_PASSWORD_NOT_MATCH_ERROR}, status=status.HTTP_400_BAD_REQUEST)
             user.set_password(request.data['password'])
 
+        if user.role == User.UserRole.Specialist:
+            if 'is_active' in request.data:
+                is_active = request.data.get('is_active',True)
+                print("HELLOOOOOOOO")
+                print(is_active)
+                user.full_user.set_active(is_active)
+                user.full_user.save()
+
         user.save()
 
         return JsonResponse({
