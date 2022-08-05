@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 
 import environ
-from corsheaders.defaults import default_methods
+from corsheaders.defaults import default_methods, default_headers
 from decouple import config
 from unipath import Path
 
@@ -102,10 +102,13 @@ CORS_ALLOW_METHODS = [
     "PUT",
 ]
 
-CORS_ALLOW_METHODS = list(default_methods) + [
+CORS_ALLOW_HEADERS  = list(default_headers) + [
     "Cache-Control",
+    "cache-control",
+    "pragma",
     "Pragma",
-    "Expires"
+    "Expires",
+    "expires"
 ]
 
 ROOT_URLCONF = 'arno.urls'
