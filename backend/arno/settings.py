@@ -159,12 +159,6 @@ REST_FRAMEWORK = {
     ],
 }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-}
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -176,7 +170,7 @@ LANGUAGES = [
 ]
 
 LOCALE_PATHS = (
-    BASE_DIR + '/../locale', )
+    BASE_DIR + '/../locale',)
 
 TIME_ZONE = "Asia/Tehran"
 
