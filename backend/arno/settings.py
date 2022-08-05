@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 
 import environ
-from corsheaders.defaults import default_methods
 from decouple import config
 from unipath import Path
 
@@ -92,21 +91,6 @@ MIDDLEWARE = [
 
 # Cors config
 CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
-
-CORS_ALLOW_METHODS = list(default_methods) + [
-    "Cache-Control",
-    "Pragma",
-    "Expires"
-]
 
 ROOT_URLCONF = 'arno.urls'
 
@@ -206,12 +190,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory where uploaded media i
 MEDIA_URL = '/media/'  # Public URL at the browser
 
 STATICFILES_DIRS = (os.path.join(CORE_DIR, "apps/static"),)
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

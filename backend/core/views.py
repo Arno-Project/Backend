@@ -2,7 +2,6 @@ import datetime
 import json
 from abc import ABC
 
-from django.core.cache import cache
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
@@ -28,7 +27,6 @@ class RequestSearchView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        cache.clear()
         query = json.loads(request.GET.get('q'))
         if request.user.get_role() == User.UserRole.Customer:
             query['customer'] = {}
