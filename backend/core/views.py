@@ -240,8 +240,9 @@ class SelectSpecialistForRequestView(APIView):
                 'error': _(SPECIALIST_ID_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         core_request = RequestCatalogue().search(query={"id": request_id})
-        specialist = UserCatalogue().search(query={"specialist_id": specialist_id})
+        specialist = UserCatalogue().search(query={"id": specialist_id})
 
+        print("SELCETTT", core_request, specialist)
         if result := self.validate(core_request, specialist):
             return result
         core_request = core_request.first()

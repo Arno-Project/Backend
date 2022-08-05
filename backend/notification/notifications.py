@@ -42,7 +42,7 @@ class RequestInitialAcceptBySpecialistNotification(BaseNotification):
                                                   title=RequestInitialAcceptBySpecialistNotification_title,
                                                   message=message,
                                                   type=Notification.NotificationType.INFO,
-                                                  link=f"#")
+                                                  link=f"/dashboard/request_details/{request.id}")
 
 
 class RequestAcceptanceFinalizeByCustomerNotification(BaseNotification):
@@ -57,7 +57,7 @@ class RequestAcceptanceFinalizeByCustomerNotification(BaseNotification):
                                                   title=RequestAcceptanceFinalizeByCustomerNotification_title,
                                                   message=message,
                                                   type=Notification.NotificationType.INFO,
-                                                  link=f"#")
+                                                  link=f"/dashboard/request_details/{request.id}")
 
 
 class RequestRejectFinalizeByCustomerNotification(BaseNotification):
@@ -72,7 +72,7 @@ class RequestRejectFinalizeByCustomerNotification(BaseNotification):
                                                   title=RequestRejectFinalizeByCustomerNotification_title,
                                                   message=message,
                                                   type=Notification.NotificationType.INFO,
-                                                  link=f"#")
+                                                  link=f"/dashboard/request_details/{request.id}")
 
 
 class RequestAcceptanceFinalizeBySpecialistNotification(BaseNotification):
@@ -87,7 +87,7 @@ class RequestAcceptanceFinalizeBySpecialistNotification(BaseNotification):
                                                   title=RequestAcceptanceFinalizeBySpecialistNotification_title,
                                                   message=message,
                                                   type=Notification.NotificationType.INFO,
-                                                  link=f"#")
+                                                  link=f"/dashboard/request_details/{request.id}")
 
 
 class RequestRejectFinalizeBySpecialistNotification(BaseNotification):
@@ -102,7 +102,7 @@ class RequestRejectFinalizeBySpecialistNotification(BaseNotification):
                                                   title=RequestRejectFinalizeBySpecialistNotification_title,
                                                   message=message,
                                                   type=Notification.NotificationType.INFO,
-                                                  link=f"#")
+                                                  link=f"/dashboard/request_details/{request.id}")
 
 
 class SelectSpecialistForRequestNotification(BaseNotification):
@@ -117,7 +117,7 @@ class SelectSpecialistForRequestNotification(BaseNotification):
                                                   title=SelectSpecialistForRequestNotification_title,
                                                   message=message,
                                                   type=Notification.NotificationType.INFO,
-                                                  link=f"#")
+                                                  link=f"/dashboard/request_details/{request.id}")
 
 
 class NewMessageNotification(BaseNotification):
