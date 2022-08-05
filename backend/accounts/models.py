@@ -1,13 +1,14 @@
-import datetime
 from typing import List
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
+from accounts.constants import *
 from utils.Singleton import Singleton
+from utils.helper_funcs import ListAdapter
 
 
 class User(AbstractUser):
@@ -18,7 +19,7 @@ class User(AbstractUser):
         Specialist = 'S', _('Specialist')
 
     email = models.EmailField(unique=True)
-    phone = PhoneField(blank=False, null=False, verbose_name=u"شماره تلفن همراه", unique=True)
+    phone = PhoneField(blank=False, null=False, verbose_name=PHONE_NUMBER_VERBOSE, unique=True)
     role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
 
     @property
@@ -36,31 +37,20 @@ class User(AbstractUser):
         elif self.role == User.UserRole.TechnicalManager:
             return self.manager_user_user.technical_manager_manger_user
 
+    @property
+    def general_user(self):
+        if self.role == User.UserRole.Customer or self.role == User.UserRole.Specialist:
+            return self.normal_user_user
+        elif self.role == User.UserRole.CompanyManager or self.role == User.UserRole.TechnicalManager:
+            return self.manager_user_user
+
     class Meta:
-        verbose_name = u"کاربر"
-        verbose_name_plural = u"کاربران"
+        verbose_name = USER_VERBOSE_NAME
+        verbose_name_plural = USER_VERBOSE_NAME_PLURAL
 
-    @classmethod
-    def search(cls, query: dict, is_customer=False, is_specialist=False, is_company_manager=False,
-               is_technical_manager=False):
-        result = cls.objects
-        if is_customer:
-            result.filter(customer__isnull=False)
-        elif is_specialist:
-            result.filter(specialist__isnull=False)
-        elif is_company_manager:
-            result.filter(company_manager__isnull=False)
-        elif is_technical_manager:
-            result.filter(technical_manager__isnull=False)
-
-        for field in ['first_name', 'last_name', 'phone']:
-            if query.get(field):
-                result = result.filter(Q(**{field + '__icontains': query[field]}))
-        if query.get('username'):
-            result = result.filter(Q(username__eq=query['username']))
-        # filter User objects that exist in Customer Table
-
-        return result
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
     def get_role(self):
         return self.role
@@ -88,6 +78,9 @@ class NormalUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="normal_user_user")
     score = models.IntegerField(default=0)
 
+    def __str__(self):
+        return self.user.__str__()
+
     def get_score(self):
         return self.score
 
@@ -101,50 +94,24 @@ class NormalUser(models.Model):
         pass
 
     class Meta:
-        verbose_name = u"کاربر عادی"
-        verbose_name_plural = u" کاربران عادی"
+        verbose_name = NORMAL_USER_VERBOSE_NAME
+        verbose_name_plural = NORMAL_USER_VERBOSE_NAME_PLURAL
 
 
 class Customer(models.Model):
     normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='customer_normal_user')
 
+    def __str__(self):
+        return self.normal_user.__str__()
+
     class Meta:
-        verbose_name = u"مشتری"
-        verbose_name_plural = u"مشتریان"
-
-    def submit_request(self, requested_speciality: "Speciality", requested_date: datetime.datetime, description: str,
-                       address: str):
-        pass
-
-    def delete_request(self, request):
-        pass
-
-    def edit_request(self, request, requested_speciality: "Speciality", requested_date: datetime.datetime,
-                     description: str, address: str):
-        pass
-
-    def select_specialist(self, specialist: "Specialist"):
-        pass
-
-    def accept_specialist(self, request):
-        pass
-
-    def reject_specialist(self, request):
-        pass
-
-    def submit_feedback(self, request, feedback: str, score: int):
-        pass
-
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_customer=True)
-        result = cls.objects.filter(user__in=result)
-        return result
+        verbose_name = CUSTOMER_VERBOSE_NAME
+        verbose_name_plural = CUSTOMER_VERBOSE_NAME_PLURAL
 
 
 class Speciality(models.Model):
-    title = models.CharField(max_length=100, verbose_name=u"نام تخصص")
-    description = models.TextField(verbose_name=u"توضیحات")
+    title = models.CharField(max_length=100, verbose_name=SPECIALITY_TITLE)
+    description = models.TextField(verbose_name=SPECIALITY_DESCRIPTION)
 
     def get_title(self):
         return self.title
@@ -158,23 +125,33 @@ class Speciality(models.Model):
     def set_description(self, description):
         self.description = description
 
-    @classmethod
-    def search(cls, query):
-        result = cls.objects
-        for field in ['name']:
+
+class SpecialityCatalogue(metaclass=Singleton):
+    specialities = Speciality.objects.all()
+
+    def search(self, query):
+        result = self.specialities
+        if query.get('id'):
+            result = result.filter(pk__in=ListAdapter().python_ensure_list(query.get('id')))
+        for field in ['title', 'description']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
+        return result
 
 
 class Specialist(models.Model):
     class Meta:
-        verbose_name = u"متخصص"
-        verbose_name_plural = u"متخصصان"
+        verbose_name = SPECIALIST_VERBOSE_NAME
+        verbose_name_plural = SPECIALIST_VERBOSE_NAME_PLURAL
 
     normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='specialist_normal_user')
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
     is_validated = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.normal_user.__str__()
 
     def add_speciality(self, speciality: "Speciality"):
         self.speciality.add(speciality)
@@ -183,7 +160,7 @@ class Specialist(models.Model):
         self.speciality.remove(speciality)
 
     def get_speciality(self):
-        return self.speciality
+        return self.speciality.all()
 
     def upload_document(self, document):
         pass
@@ -191,70 +168,68 @@ class Specialist(models.Model):
     def remove_document(self):
         pass
 
-    def accept_request(self, request):
-        pass
+    def get_is_validated(self):
+        return self.is_validated
 
-    def reject_request(self, request):
-        pass
+    def set_validated(self, is_validated: bool):
+        self.is_validated = is_validated
 
-    def submit_feedback(self, request, feedback: str, score: int):
-        pass
+    def get_is_active(self):
+        return self.is_active
 
-    def submit_request_fullfillment(self, request):
-        pass
-
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_specialist=True)
-        result = cls.objects.filter(user__in=result)
-        for field in ['speciality']:
-            if query.get(field):
-                result = result.filter(Q(**{'specialist__' + field + '__icontains': query[field]}))
-        return result
-
+    def set_active(self, is_active: bool):
+        self.is_active = is_active
 
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
+
+    def confirm_specialist(self, specialist: Specialist):
+        specialist.set_validated(True)
+        specialist.save()
+
+    def __str__(self):
+        return self.user.__str__()
+
+    class Meta:
+        verbose_name = MANAGER_USER_VERBOSE_NAME
+        verbose_name_plural = MANAGER_USER_VERBOSE_NAME_PLURAL
 
 
 class CompanyManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
                                         related_name='company_manager_manager_user')
 
+    def __str__(self):
+        return self.manager_user.__str__()
+
     def add_new_manager(self, username: str, password: str, email: str, phone: str):
         pass
 
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_company_manager=True)
-        result = cls.objects.filter(user__in=result)
-        return result
+    class Meta:
+        verbose_name = COMPANY_MANAGER_VERBOSE_NAME
+        verbose_name_plural = COMPANY_MANAGER_VERBOSE_NAME_PLURAL
 
 
 class TechnicalManager(models.Model):
     manager_user = models.OneToOneField(ManagerUser, on_delete=models.CASCADE,
                                         related_name='technical_manager_manger_user')
 
-    @classmethod
-    def search(cls, query):
-        result = User.search(query, is_technical_manager=True)
-        result = cls.objects.filter(user__in=result)
-        return result
+    def __str__(self):
+        return self.manager_user.__str__()
 
-
-# create singleton class for UserCatalogue
 
 class UserCatalogue(metaclass=Singleton):
     users = User.objects.all()
 
     def search(self, query):
         result = self.users
+        print("QUERY", query)
 
         if not query:
             return result
         for field in ['id']:
             if query.get(field):
-                result = result.filter(id__exact=query[field])
+                result = result.filter(pk__in=ListAdapter().python_ensure_list(query[field]))
         for field in ['first_name', 'last_name', 'phone']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
@@ -266,10 +241,11 @@ class UserCatalogue(metaclass=Singleton):
             if query['role'] == User.UserRole.Specialist:
                 for field in ['speciality']:
                     if query.get(field):
-                        result = result.filter(Q(**{'specialist__' + field + '__icontains': query[field]}))
-                return result
+                        result = result.filter(Q(**{'normal_user_user__specialist_normal_user__' + field + '__in': query[field]}))
+        if query.get('specialist_id'):
+            result = result.filter(Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
+            print(result)
 
         return result
 
-    def sort_by_join_date(self, ascending):
-        pass
+

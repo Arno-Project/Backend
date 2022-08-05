@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 
 import environ
+from corsheaders.defaults import default_headers
 from decouple import config
 from unipath import Path
 
@@ -67,7 +68,9 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'core.apps.CoreConfig',
     'feedback.apps.FeedbackConfig',
+    'notification.apps.NotificationConfig',
     'corsheaders',
+    'chat',
     'rest_framework',
     'phone_field',
     'knox',
@@ -89,6 +92,25 @@ MIDDLEWARE = [
 
 # Cors config
 CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS  = list(default_headers) + [
+    "Cache-Control",
+    "cache-control",
+    "pragma",
+    "Pragma",
+    "Expires",
+    "expires"
+]
+
 
 ROOT_URLCONF = 'arno.urls'
 
@@ -168,7 +190,7 @@ LANGUAGES = [
 ]
 
 LOCALE_PATHS = (
-    BASE_DIR + '/../locale', )
+    BASE_DIR + '/../locale',)
 
 TIME_ZONE = "Asia/Tehran"
 
@@ -187,7 +209,9 @@ STATIC_URL = "/static/"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory where uploaded media is saved.
 MEDIA_URL = '/media/'  # Public URL at the browser
 
-STATICFILES_DIRS = (os.path.join(CORE_DIR, "apps/static"),)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

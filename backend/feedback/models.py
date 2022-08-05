@@ -2,20 +2,22 @@ from typing import List
 
 from django.db import models
 
-# Create your models here.
 from django.db.models import Q
 
 import accounts.models
+from accounts.models import NormalUser
 from core.models import Request
 from utils.Singleton import Singleton
+
 from django.utils.translation import gettext_lazy as _
+from utils.helper_funcs import ListAdapter
 
 
 class EvaluationMetric(models.Model):
     title = models.CharField(max_length=255, null=False, blank=False)
     description = models.TextField(null=False, blank=False)
     user_type = models.CharField(max_length=2, choices=accounts.models.User.UserRole.choices,
-                                 default=accounts.models.User.UserRole.choices)
+                                 default=accounts.models.User.UserRole.Customer)
 
     def get_title(self):
         return self.title
@@ -36,17 +38,30 @@ class EvaluationMetric(models.Model):
         self.user_type = user_role
 
 
-class EvaluationMetricCatalogue(Singleton):
-    metrics = EvaluationMetric.objects.all()
+class EvaluationMetricCatalogue(metaclass=Singleton):
+    metrics = EvaluationMetric.objects
+
+    def search(self, query):
+        result = self.metrics
+        print(query)
+
+        if not query:
+            return result
+        for field in ['id']:
+            if query.get(field):
+                result = result.filter(pk__in=ListAdapter().python_ensure_list(query[field]))
+        for field in ['title', 'description']:
+            if query.get(field):
+                result = result.filter(
+                    Q(**{field + '__icontains': query[field]}))
+        if query.get('user_type'):
+            print(query.get('user_type'))
+            result = result.filter(user_type__iexact=query['user_type'])
+        # filter User objects that exist in Customer Table
+        return result
 
     def get_evaluation_metric_list(self):
         return self.metrics
-
-    def search_by_title(self, title: str):
-        return self.metrics.filter(title__icontains=title)
-
-    def search_by_user_type(self, user_type):
-        return self.metrics.filter(user_type__icontains=user_type)
 
 
 class MetricScore(models.Model):
@@ -72,6 +87,7 @@ class Feedback(models.Model):
     request = models.ForeignKey(Request, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     metric_scores = models.ManyToManyField(MetricScore, blank=True, null=True)
+    user = models.ForeignKey(NormalUser, on_delete=models.CASCADE)
 
     def get_description(self):
         return self.description
@@ -92,14 +108,17 @@ class Feedback(models.Model):
         pass
 
 
-class FeedbackCatalogue(Singleton):
+class FeedbackCatalogue(metaclass=Singleton):
     feedbacks = Feedback.objects.all()
 
     def get_feedback_list(self):
         return self.feedbacks
 
-    def serach_by_request(self, request):
-        pass
+    def serach_by_request(self, request_id, user_id) -> Feedback:
+        try:
+            return self.feedbacks.get(request__id=request_id, user__user__id=user_id)
+        except Feedback.DoesNotExist:
+            return None
 
     def search_after_time(self, time):
         pass
@@ -111,7 +130,8 @@ class FeedbackCatalogue(Singleton):
 class SystemFeedbackReply(models.Model):
     text = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(accounts.models.TechnicalManager, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        accounts.models.TechnicalManager, on_delete=models.CASCADE)
 
     def get_user(self):
         return self.user
@@ -135,10 +155,14 @@ class SystemFeedback(models.Model):
 
     text = models.TextField(null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    type = models.CharField(max_length=1, choices=SystemFeedbackType.choices, default=SystemFeedbackType.Other)
-    status = models.CharField(max_length=1, choices=SystemFeedbackStatus.choices, default=SystemFeedbackStatus.New)
-    user = models.ForeignKey(accounts.models.NormalUser, on_delete=models.CASCADE)
-    reply = models.ForeignKey(SystemFeedbackReply, on_delete=models.CASCADE, null=True, blank=True)
+    type = models.CharField(
+        max_length=1, choices=SystemFeedbackType.choices, default=SystemFeedbackType.Other)
+    status = models.CharField(
+        max_length=1, choices=SystemFeedbackStatus.choices, default=SystemFeedbackStatus.New)
+    user = models.ForeignKey(accounts.models.NormalUser,
+                             on_delete=models.CASCADE)
+    reply = models.ForeignKey(
+        SystemFeedbackReply, on_delete=models.CASCADE, null=True, blank=True)
 
     def get_text(self):
         return self.text
@@ -157,6 +181,7 @@ class SystemFeedback(models.Model):
 
     def set_reply(self, reply):
         self.reply = reply
+        self.set_status(self.SystemFeedbackStatus.Replied)
 
     def get_reply(self):
         return self.reply
