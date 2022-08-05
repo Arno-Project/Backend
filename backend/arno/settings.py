@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 
 import environ
+from corsheaders.defaults import default_headers
 from decouple import config
 from unipath import Path
 
@@ -91,6 +92,25 @@ MIDDLEWARE = [
 
 # Cors config
 CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS  = list(default_headers) + [
+    "Cache-Control",
+    "cache-control",
+    "pragma",
+    "Pragma",
+    "Expires",
+    "expires"
+]
+
 
 ROOT_URLCONF = 'arno.urls'
 
