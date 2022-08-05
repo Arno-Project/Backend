@@ -154,8 +154,6 @@ class EditProfileView(APIView):
         if user.role == User.UserRole.Specialist:
             if 'is_active' in request.data:
                 is_active = request.data.get('is_active',True)
-                print("HELLOOOOOOOO")
-                print(is_active)
                 user.full_user.set_active(is_active)
                 user.full_user.save()
 
