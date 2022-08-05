@@ -90,6 +90,38 @@ class RequestSubmitView(APIView):
         })
 
 
+class RequestCancelByCustomerView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+
+    def post(self, request):
+        # TODO Add more checks on status of request
+        request_id = request.data.get('request_id')
+        _request = RequestCatalogue().search(query={'id': request_id})
+        if not _request.exists():
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_404_NOT_FOUND)
+        _request = _request[0]
+        if _request.customer != request.user.full_user:
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_404_NOT_FOUND)
+        if _request.status == Request.RequestStatus.DONE:
+            return Response({
+                'error': _(REQUEST_ALREADY_DONE_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+        if _request.get_status() == Request.RequestStatus.CANCELED:
+            return Response({
+                'error': _(REQUEST_ALREADY_CANCELLED_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+
+        _request.cancel()
+        return JsonResponse({
+            'request': RequestSerializer(_request).data
+        })
+
+
 class RequestCancelByManagerView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class() | PermissionFactory(

@@ -20,6 +20,7 @@ YOU_DONT_HAVE_SPECIALITY_ERROR = u"شما تخصص مد نظر این درخوا
 
 REQUEST_ALREADY_IN_INITIAL_ACCEPTANCE_STATUS_ERROR = u"درخواست از قبل در وضعیت تایید اولیه از سوی متخصص قرار دارد"
 REQUEST_ALREADY_CANCELLED_ERROR = u"درخواست از قبل لغو شده است"
+REQUEST_ALREADY_DONE_ERROR = u'درخواست از قبل انجام شده است'
 YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR = u"شما از قبل برای این تخصص درخواست داده‌اید"
 
 IS_ACCEPT_REQUIRED_ERROR = "is_accept is required"
