@@ -202,11 +202,11 @@ class RequestCatalogue(metaclass=Singleton):
 
         for field in ['desired_start_time_gte', 'accepted_at_gte', 'completed_at_gte']:
             if query.get(field):
-                result = result.filter(**{'_'.join(query.get(field).split('_')[:-1]) + "__gte": query.get(field)})
+                result = result.filter(**{'_'.join(field.split('_')[:-1]) + "__gte": query.get(field)})
 
         for field in ['desired_start_time_lte', 'accepted_at_lte', 'completed_at_lte']:
             if query.get(field):
-                result = result.filter(**{'_'.join(query.get(field).split('_')[:-1]) + "__lte": query.get(field)})
+                result = result.filter(**{'_'.join(field.split('_')[:-1]) + "__lte": query.get(field)})
 
         return result
 
