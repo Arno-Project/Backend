@@ -68,7 +68,10 @@ class RequestSubmitView(APIView):
         data = {'customer': UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user.id}
         requested_speciality = request.data['requested_speciality']
         _request = RequestCatalogue().search(
-            query={'requested_speciality': requested_speciality, 'customer': {'id': request.user.id}})
+            query={'speciality': requested_speciality, 'customer': {'id': request.user.id}})
+        _request = _request \
+            .exclude(status__exact=Request.RequestStatus.DONE) \
+            .exclude(status__exact=Request.RequestStatus.CANCELED)
         if _request.exists():
             return Response({
                 'error': _(YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR)
