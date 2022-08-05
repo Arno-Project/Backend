@@ -270,6 +270,7 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
         pass
 
     def post(self, request):
+        print(request.data)
         request_id = request.data.get('request_id')
         if request_id is None:
             return Response({
@@ -292,9 +293,10 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
             self.notification_builder_accept(core_request).build()
         else:
             core_request.set_status(Request.RequestStatus.PENDING)
-            core_request.set_specialist(None)
             core_request.set_accepted_at(datetime.datetime.now())  # TODO check timezone
             self.notification_builder_reject(core_request).build()
+            core_request.set_specialist(None)
+            
 
         core_request.save()
         return JsonResponse({
