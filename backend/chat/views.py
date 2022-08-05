@@ -1,11 +1,11 @@
+from django.http import JsonResponse
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from django.http import JsonResponse
 
+from accounts.models import NormalUser
 from chat.models import MessageCatalogue, Message
 from chat.serializers import MessageSerializer
-from accounts.models import User, NormalUser
 from notification.notifications import BaseNotification, NewMessageNotification
 
 
