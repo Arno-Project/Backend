@@ -111,8 +111,6 @@ class RequestCancelByManagerView(APIView):
             }, status=HTTP_400_BAD_REQUEST)
 
         request.cancel()
-        request.set_status(Request.RequestStatus.CANCELED)
-        request.save(force_update=True)
         return JsonResponse({
             'request': RequestSerializer(request).data
         })
