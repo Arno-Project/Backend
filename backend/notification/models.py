@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# Create your models here.
 from accounts.models import User
 from utils.Singleton import Singleton
 
@@ -77,8 +76,3 @@ class NotificationCatalogue(metaclass=Singleton):
 
     def get_all(self, user):
         return self.notifications.filter(user=user).order_by('-date')
-
-
-
-
-

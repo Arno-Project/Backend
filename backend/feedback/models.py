@@ -2,7 +2,6 @@ from typing import List
 
 from django.db import models
 
-# Create your models here.
 from django.db.models import Q
 
 import accounts.models

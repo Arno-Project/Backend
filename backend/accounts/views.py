@@ -24,8 +24,6 @@ from .serializers import CompanyManagerSerializer, CustomerSerializer, \
     TechnicalManagerFullSerializer, SpecialitySerializer, RegisterSerializerFactory
 
 
-# Create your views here.
-
 class RegisterView(generics.GenericAPIView, ABC):
     first_serializer = None
     second_serializer = None

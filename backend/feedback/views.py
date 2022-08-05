@@ -1,7 +1,6 @@
 import json
 
 from django.http import JsonResponse
-# Create your views here.
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND

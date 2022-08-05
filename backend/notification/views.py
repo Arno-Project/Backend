@@ -1,6 +1,5 @@
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
-# Create your views here.
 from knox.auth import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND

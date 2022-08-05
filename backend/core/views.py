@@ -15,7 +15,6 @@ from accounts.models import User, UserCatalogue
 from core.constants import *
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
-# Create your views here.
 from notification.notifications import RequestInitialAcceptBySpecialistNotification, \
     RequestAcceptanceFinalizeByCustomerNotification, RequestRejectFinalizeByCustomerNotification, BaseNotification, \
     SelectSpecialistForRequestNotification, RequestAcceptanceFinalizeBySpecialistNotification, \

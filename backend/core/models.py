@@ -1,4 +1,3 @@
-# Create your models here.
 from __future__ import annotations
 
 from datetime import datetime
