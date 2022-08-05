@@ -153,7 +153,7 @@ class EditProfileView(APIView):
 
         if user.role == User.UserRole.Specialist:
             if 'is_active' in request.data:
-                is_active = request.data.get('is_active',True)
+                is_active = request.data.get('is_active', True)
                 user.full_user.set_active(is_active)
                 user.full_user.save()
 
@@ -249,8 +249,13 @@ class SpecialityAddRemoveView(APIView):
             specialist.remove_speciality(speciality)
         return HttpResponse('OK', status=status.HTTP_200_OK)
 
-    def post(self, request, *args, **kwargs):
-        return self.add_remove_speciality(request, True, *args, **kwargs)
+    def post(self, request, operation="", *args, **kwargs):
+        if operation == "add":
+            return self.add_remove_speciality(request, True, *args, **kwargs)
+        elif operation == "delete":
+            return self.add_remove_speciality(request, False, *args, **kwargs)
+        else:
+            return JsonResponse({'error': INVALID_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
         return self.add_remove_speciality(request, False, *args, **kwargs)
@@ -264,8 +269,7 @@ class ConfirmSpecialistView(APIView):
     def post(self, request, *args, **kwargs):
         specialist_id = request.data.get('specialist_id')
         try:
-            specialist = UserCatalogue().search(query={'specialist_id': specialist_id, 'role': "S"})[
-                0].full_user
+            specialist = UserCatalogue().search(query={'specialist_id': specialist_id, 'role': "S"})[0].full_user
         except IndexError:
             return JsonResponse({'error': SPECIALIST_NOT_FOUND_ERROR}, status=status.HTTP_400_BAD_REQUEST)
         if specialist.get_is_validated():
