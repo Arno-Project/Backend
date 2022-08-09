@@ -15,7 +15,7 @@ RequestRejectFinalizeBySpecialistNotification_title = u"رد درخواست تو
 RequestRejectFinalizeBySpecialistNotification_message = u"متخصص با نام {} درخواست شما با شرح {} را رد کرد.\n"
 
 SelectSpecialistForRequestNotification_title = u"انتخاب شما برای درخواست"
-SelectSpecialistForRequestNotification_message = u"متخصص با نام {} از شما برای انجام خدمات با شرح {} درخواست کرده است..\n"
+SelectSpecialistForRequestNotification_message = u"مشتری با نام {} از شما برای انجام خدمات با شرح {} درخواست کرده است.\n"
 
 NewMessageNotification_title = u"پیام جدید"
 NewMessageNotification_message = u"{} یک پیام جدید برای شما ارسال کرد.\n "

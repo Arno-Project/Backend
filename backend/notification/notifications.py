@@ -82,7 +82,7 @@ class RequestAcceptanceFinalizeBySpecialistNotification(BaseNotification):
     def build(self):
         request: Request = self.entity
         message = RequestAcceptanceFinalizeBySpecialistNotification_message.format(
-            request.customer.normal_user.user.full_name, request.description)
+            request.specialist.normal_user.user.full_name, request.description)
         NotificationBuilder().create_notification(request.customer.normal_user.user,
                                                   title=RequestAcceptanceFinalizeBySpecialistNotification_title,
                                                   message=message,
@@ -97,7 +97,7 @@ class RequestRejectFinalizeBySpecialistNotification(BaseNotification):
     def build(self):
         request: Request = self.entity
         message = RequestRejectFinalizeBySpecialistNotification_message.format(
-            request.customer.normal_user.user.full_name, request.description)
+            request.specialist.normal_user.user.full_name, request.description)
         NotificationBuilder().create_notification(request.customer.normal_user.user,
                                                   title=RequestRejectFinalizeBySpecialistNotification_title,
                                                   message=message,
