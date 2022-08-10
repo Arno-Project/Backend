@@ -185,8 +185,8 @@ class RequestCatalogue(metaclass=Singleton):
             result = result.filter(specialist_normal_user__user__in=users)
 
         if query.get('speciality'):
-            speciality_query = query.get('speciality')['id']
-            result = result.filter(requested_speciality__in=speciality_query)
+            speciality_query =  query.get('speciality')
+            result = result.filter(requested_speciality__in=ListAdapter().python_ensure_list(speciality_query))
 
         if query.get('location'):
             locations = LocationCatalogue().search(query=query.get('location'))
