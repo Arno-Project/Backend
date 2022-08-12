@@ -89,21 +89,36 @@ class LocationView(APIView):
 
 class RequestSubmitView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
+    permission_classes = [
+        PermissionFactory(User.UserRole.Customer).get_permission_class() |
+        PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
+        PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()
+    ]
 
     @Logger().log_name()
     def post(self, request, *args, **kwargs):
-        data = {'customer': UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user.id}
+        if request.user.get_role() == User.UserRole.Customer:
+            customer_id = UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[
+                0].full_user.id
+        else:
+            if request.data.get('customer', None):
+                customer_id = request.data.get('customer')
+            else:
+                return Response({
+                    'error': _(INVALID_REQUEST)
+                }, status=HTTP_400_BAD_REQUEST)
+        data = {'customer': customer_id}
         requested_speciality = request.data['requested_speciality']
-        _request = RequestCatalogue().search(
-            query={'speciality': requested_speciality, 'customer': {'id': request.user.id}})
-        _request = _request \
-            .exclude(status__exact=Request.RequestStatus.DONE) \
-            .exclude(status__exact=Request.RequestStatus.CANCELED)
-        if _request.exists():
-            return Response({
-                'error': _(YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
+        if request.user.get_role() == User.UserRole.Customer:
+            _request = RequestCatalogue().search(
+                query={'speciality': requested_speciality, 'customer': {'id': request.user.id}})
+            _request = _request \
+                .exclude(status__exact=Request.RequestStatus.DONE) \
+                .exclude(status__exact=Request.RequestStatus.CANCELED)
+            if _request.exists():  # this is only checked for customer. Manager can create duplicate request.
+                return Response({
+                    'error': _(YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR)
+                }, status=HTTP_400_BAD_REQUEST)
 
         for field in ['location', 'description']:
             if field in request.data:

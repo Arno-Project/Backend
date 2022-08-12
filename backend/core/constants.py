@@ -22,6 +22,7 @@ REQUEST_ALREADY_IN_INITIAL_ACCEPTANCE_STATUS_ERROR = u"درخواست از قب�
 REQUEST_ALREADY_CANCELLED_ERROR = u"درخواست از قبل لغو شده است"
 REQUEST_ALREADY_DONE_ERROR = u'درخواست از قبل انجام شده است'
 YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR = u"شما از قبل برای این تخصص درخواست داده‌اید"
+INVALID_REQUEST = u"درخواست نامعتبر"
 
 IS_ACCEPT_REQUIRED_ERROR = "is_accept is required"
 SPECIALIST_ID_REQUIRED_ERROR = "specialist_id is required"
