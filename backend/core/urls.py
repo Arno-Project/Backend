@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import RequestSearchView, LocationView, RequestSubmitView, RequestCancelByManagerView, RequestStatusView, \
     RequestInitialAcceptBySpecialistView, RequestAcceptanceFinalizeByCustomerView, SelectSpecialistForRequestView, \
-    RequestAcceptanceFinalizeBySpecialistView, RequestCancelByCustomerView, RequestPopularityView
+    RequestAcceptanceFinalizeBySpecialistView, RequestCancelByCustomerView, RequestPopularityView, RequestEditView
 
 urlpatterns = [
     path('request/search/', RequestSearchView.as_view(), name='request-search'),
@@ -18,5 +18,6 @@ urlpatterns = [
          name='request-finalize-by-customer'),
     path('request/select/specialist/', SelectSpecialistForRequestView.as_view(), name='request-select-specialist'),
     path('request/accept/specialist/final/', RequestAcceptanceFinalizeBySpecialistView.as_view(),
-         name='request-finalize-by-specialist')
+         name='request-finalize-by-specialist'),
+    path('request/edit/<request_id>/', RequestEditView.as_view(), name='edit-request'),
 ]

@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_201_CREATED
 from rest_framework.views import APIView
 
-from accounts.models import User, UserCatalogue, SpecialityCatalogue
+from accounts.models import User, UserCatalogue, SpecialityCatalogue, Specialist
 from accounts.serializers import SpecialitySerializer
 from arno.settings import MEDIA_ROOT
 from core.constants import *
@@ -130,6 +130,56 @@ class RequestSubmitView(APIView):
         request = serializer.save()
         return JsonResponse({
             'request': RequestSerializer(request).data
+        })
+
+
+class RequestEditView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [
+        PermissionFactory(User.UserRole.Customer).get_permission_class() |
+        PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
+        PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()
+    ]
+
+    @Logger().log_name()
+    def put(self, request, request_id=None):
+
+        request_entity = RequestCatalogue().search(query={"id": request_id})
+        if not request_entity.exists():
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_400_BAD_REQUEST)
+
+        request_entity = request_entity.first()
+
+        if request.data.get('requested_speciality', None):
+            requested_speciality = request.data['requested_speciality']
+            if request.user.get_role() == User.UserRole.Customer:
+                _request = RequestCatalogue().search(
+                    query={'speciality': requested_speciality, 'customer': {'id': request.user.id}})
+                _request = _request \
+                    .exclude(status__exact=Request.RequestStatus.DONE) \
+                    .exclude(status__exact=Request.RequestStatus.CANCELED)
+                if _request.exists():  # this is only checked for customer. Manager can create duplicate request.
+                    return Response({
+                        'error': _(YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR)
+                    }, status=HTTP_400_BAD_REQUEST)
+            request_entity.requested_speciality = SpecialityCatalogue().search(
+                query={'id': requested_speciality}).first()
+
+        for field in ['description', 'status', 'desired_start_time']:
+            if field in request.data:
+                setattr(request_entity, field, request.data[field])
+
+        if request.data.get('location', None):
+            request_entity.location = Location.objects.filter(pk=request.data['location']).first()
+
+        if request.data.get('specialist', None):
+            request_entity.specialist = Specialist.objects.filter(pk=request.data['specialist']).first()
+
+        request_entity.save()
+        return JsonResponse({
+            'request': RequestSerializer(request_entity).data
         })
 
 
