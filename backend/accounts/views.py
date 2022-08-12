@@ -1,3 +1,4 @@
+import json
 from abc import ABC
 from typing import Type
 
@@ -22,7 +23,7 @@ from .serializers import CompanyManagerSerializer, CustomerSerializer, \
     SpecialistFullSerializer, \
     CustomerFullSerializer, SpecialistSerializer, TechnicalManagerSerializer, \
     UserFullSerializer, CompanyManagerFullSerializer, \
-    TechnicalManagerFullSerializer, SpecialitySerializer, RegisterSerializerFactory
+    TechnicalManagerFullSerializer, SpecialitySerializer, RegisterSerializerFactory, SpecialityCreationSerializer
 
 
 class RegisterView(generics.GenericAPIView, ABC):
@@ -207,7 +208,11 @@ class SpecialityView(APIView):
         if self.request.method == 'GET':
             permission_classes = [AllowAny]
         else:
-            permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+            permission_classes = [
+                PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
+                PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
+                PermissionFactory(User.UserRole.Specialist).get_permission_class()
+            ]
         return [permission() for permission in permission_classes]
 
     authentication_classes = [TokenAuthentication]
@@ -227,12 +232,68 @@ class SpecialityView(APIView):
         speciality = SpecialityCatalogue().search(query={'title': request.data.get('title')})
         if speciality.exists() and speciality.first().get_title() == request.data.get('title'):
             return JsonResponse({'error': SPECIALITY_EXISTS_ERROR}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = SpecialitySerializer(data=request.data)
+        if request.data.get('parent', None):
+            speciality = SpecialityCatalogue().search(query={'id': request.data.get('parent')})
+            if speciality.exists():
+                request.data['parent'] = speciality.first().id
+                if speciality.first().parent is not None:
+                    return JsonResponse({'error': SPECIALITY_PARENT_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                request.data['parent'] = None
+        else:
+            request.data['parent'] = None
+        if (request.user.get_role() == User.UserRole.Specialist) and request.data.get('parent', None) is None:
+            return JsonResponse({'error': SPECIALITY_SPECIALIST_PARENT_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+        print(request.data)
+        serializer = SpecialityCreationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         speciality = serializer.save()
         return Response({
             'speciality': SpecialitySerializer(speciality).data
         })
+
+
+class SpecialitySearchView(APIView):
+    # TODO add to class diagram
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @Logger().log_name()
+    def get(self, request):
+        query = json.loads(request.GET.get('q'))
+        print(query)
+        specialities = SpecialityCatalogue().search(query)
+        serialized = SpecialitySerializer(specialities, many=True).data
+        return JsonResponse({'specialities': serialized}, safe=False)
+
+
+class SpecialtyCategorizeView(APIView):
+    # TODO add to class diagram
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [
+        PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
+        PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()
+    ]
+
+    def post(self, request, *args, **kwargs):
+        parent_id = request.data.get('parent', None)
+        child_id = request.data.get('child', None)
+        if parent_id is None or child_id is None:
+            return JsonResponse({'error': INVALID_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
+        if parent_id == child_id:
+            return JsonResponse({'error': SPECIALITY_CHILD_EQUAL_PARENT_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+        parent = SpecialityCatalogue().search(query={'id': parent_id})
+        child = SpecialityCatalogue().search(query={'id': child_id})
+        if not parent.exists() or not child.exists():
+            return JsonResponse({'error': SPECIALITY_NOT_EXISTS_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+        child = child.first()
+        parent = parent.first()
+        if parent.parent is not None:
+            return JsonResponse({'error': SPECIALITY_PARENT_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+        child.parent = parent
+        child.save()
+        return JsonResponse({'speciality': SpecialitySerializer(child).data})
 
 
 class SpecialityAddRemoveView(APIView):

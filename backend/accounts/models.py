@@ -150,7 +150,18 @@ class SpecialityCatalogue(metaclass=Singleton):
             result = result.filter(parent__isnull=False)
         if query.get('is_category', 0):
             result = result.filter(parent__isnull=True)
-
+        if query.get('parent'):
+            parent_query = {
+                **query.get('parent'),
+            }
+            parent = SpecialityCatalogue().search(query=parent_query)
+            result = result.filter(parent__in=parent)
+        if query.get('children'):
+            children_query = {
+                **query.get('children'),
+            }
+            children = SpecialityCatalogue().search(query=children_query)
+            result = result.filter(children__in=children)
         return result
 
 

@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 from accounts.models import User, Customer, Specialist, TechnicalManager, CompanyManager, Speciality, NormalUser, \
@@ -34,6 +35,7 @@ class UserFullSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login', 'role')
+
 
 class NormalUserSerializer(ModelSerializer):
     user = UserSerializer()
@@ -81,10 +83,31 @@ class CustomerFullSerializer(FlattenMixin, ModelSerializer):
         flatten = [('normal_user', NormalUserSerializer)]
 
 
-class SpecialitySerializer(ModelSerializer):
+# TODO add to class diagram
+
+class SpecialityBasicSerializer(ModelSerializer):
     class Meta:
         model = Speciality
-        fields = '__all__'
+        fields = ('id', 'title', 'description')
+
+
+class SpecialitySerializer(ModelSerializer):
+    parent = SpecialityBasicSerializer()
+
+    def get_fields(self):
+        fields = super(SpecialitySerializer, self).get_fields()
+        fields['children'] = SpecialitySerializer(many=True)
+        return fields
+
+    class Meta:
+        model = Speciality
+        fields = ('id', 'title', 'description', 'parent', 'children')
+
+
+class SpecialityCreationSerializer(ModelSerializer):
+    class Meta:
+        model = Speciality
+        fields = ('id', 'title', 'description', 'parent')
 
 
 class SpecialistSerializer(FlattenMixin, ModelSerializer):
@@ -169,5 +192,3 @@ class RegisterSerializerFactory:
                 return concrete_user
 
         return Serializer
-
-
