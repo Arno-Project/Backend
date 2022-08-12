@@ -112,6 +112,7 @@ class Customer(models.Model):
 class Speciality(models.Model):
     title = models.CharField(max_length=100, verbose_name=SPECIALITY_TITLE)
     description = models.TextField(verbose_name=SPECIALITY_DESCRIPTION)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
 
     def get_title(self):
         return self.title
@@ -125,6 +126,15 @@ class Speciality(models.Model):
     def set_description(self, description):
         self.description = description
 
+    def get_children(self):
+        return Speciality.objects.filter(parent=self)
+
+    def get_parent(self):
+        return self.parent
+
+    def set_parent(self, parent):
+        self.parent = parent
+
 
 class SpecialityCatalogue(metaclass=Singleton):
     specialities = Speciality.objects.all()
@@ -136,6 +146,11 @@ class SpecialityCatalogue(metaclass=Singleton):
         for field in ['title', 'description']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__icontains': query[field]}))
+        if query.get('is_leaf', 0):
+            result = result.filter(parent__isnull=False)
+        if query.get('is_category', 0):
+            result = result.filter(parent__isnull=True)
+
         return result
 
 
@@ -179,6 +194,7 @@ class Specialist(models.Model):
 
     def set_active(self, is_active: bool):
         self.is_active = is_active
+
 
 class ManagerUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
@@ -241,11 +257,10 @@ class UserCatalogue(metaclass=Singleton):
             if query['role'] == User.UserRole.Specialist:
                 for field in ['speciality']:
                     if query.get(field):
-                        result = result.filter(Q(**{'normal_user_user__specialist_normal_user__' + field + '__in': query[field]}))
+                        result = result.filter(
+                            Q(**{'normal_user_user__specialist_normal_user__' + field + '__in': query[field]}))
         if query.get('specialist_id'):
             result = result.filter(Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
             print(result)
 
         return result
-
-
