@@ -5,7 +5,7 @@ services:
       build:
          context: .
          dockerfile: Dockerfile
-      command: python manage.py runserver 0.0.0.0:8000
+      command: bash -c "python manage.py collectstatic  --noinput && gunicorn -c gunicorn.conf.py"
       volumes:
          - .:/app
       ports:
