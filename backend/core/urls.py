@@ -2,10 +2,11 @@ from django.urls import path
 
 from .views import RequestSearchView, LocationView, RequestSubmitView, RequestCancelByManagerView, RequestStatusView, \
     RequestInitialAcceptBySpecialistView, RequestAcceptanceFinalizeByCustomerView, SelectSpecialistForRequestView, \
-    RequestAcceptanceFinalizeBySpecialistView, RequestCancelByCustomerView
+    RequestAcceptanceFinalizeBySpecialistView, RequestCancelByCustomerView, RequestPopularityView
 
 urlpatterns = [
     path('request/search/', RequestSearchView.as_view(), name='request-search'),
+    path('request/popularity/', RequestPopularityView.as_view(), name='request-popularity'),
     path('location/', LocationView.as_view(), name='location-create'),
     path('request/submit/', RequestSubmitView.as_view(), name='request-submit'),
     path('request/cancel/', RequestCancelByCustomerView.as_view(), name='request-cancel-customer'),

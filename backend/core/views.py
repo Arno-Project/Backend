@@ -7,13 +7,14 @@ from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
 from rest_framework import generics
-from rest_framework.parsers import FileUploadParser, MultiPartParser
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_201_CREATED
 from rest_framework.views import APIView
 
-from accounts.models import User, UserCatalogue
+from accounts.models import User, UserCatalogue, SpecialityCatalogue
+from accounts.serializers import SpecialitySerializer
 from arno.settings import MEDIA_ROOT
 from core.constants import *
 from core.models import Request, Location, RequestCatalogue
@@ -114,6 +115,33 @@ class RequestSubmitView(APIView):
         request = serializer.save()
         return JsonResponse({
             'request': RequestSerializer(request).data
+        })
+
+
+class RequestPopularityView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+
+    @Logger().log_name()
+    def get(self, request):
+        query = json.loads(request.GET.get('q'))
+        category = request.GET.get('category', None)
+        requests = RequestCatalogue().search(query=query)
+        if category:
+            request_sorted = RequestCatalogue().sort_by_popularity_category(requests)
+        else:
+            request_sorted = RequestCatalogue().sort_by_popularity(requests)
+        result = []
+        for request in request_sorted:
+
+            speciality = request.get('requested_speciality' + ('' if not category else '__parent'))
+            if speciality:
+                speciality = SpecialityCatalogue().search(query={"id": speciality}).first()
+                print(speciality.id)
+                result.append({'speciality': SpecialitySerializer(speciality).data,
+                               'count': request.get('count')})
+        return JsonResponse({
+            'popularity': result
         })
 
 
@@ -329,7 +357,6 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
             core_request.set_accepted_at(datetime.datetime.now())  # TODO check timezone
             self.notification_builder_reject(core_request).build()
             core_request.set_specialist(None)
-            
 
         core_request.save()
         return JsonResponse({

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Customer, Specialist, Speciality, User, UserCatalogue, SpecialityCatalogue
@@ -214,3 +214,11 @@ class RequestCatalogue(metaclass=Singleton):
 
     def sort_by_time(self):
         return self.requests.order_by('desired_start_time')
+
+    def sort_by_popularity(self, queryset):
+        return queryset.values('requested_speciality').annotate(
+            count=Count('requested_speciality')).order_by("-count")
+
+    def sort_by_popularity_category(self, queryset):
+        return queryset.values('requested_speciality__parent').annotate(
+            count=Count('requested_speciality__parent')).order_by("-count")
