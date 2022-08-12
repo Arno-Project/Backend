@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
+from log.models import Logger
 from notification.constants import *
 from notification.models import NotificationCatalogue, Notification
 from notification.serializers import NotificationSerializer
@@ -30,6 +31,7 @@ class NotificationView(APIView):
 
         return JsonResponse({"notifications": serializer.data})
 
+    @Logger().log_name()
     def post(self, request):
         ids = request.data.get('ids')
         id_list = ListAdapter().python_ensure_list(ids)

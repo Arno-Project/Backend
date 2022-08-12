@@ -18,6 +18,7 @@ from arno.settings import MEDIA_ROOT
 from core.constants import *
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
+from log.models import Logger
 from notification.notifications import RequestInitialAcceptBySpecialistNotification, \
     RequestAcceptanceFinalizeByCustomerNotification, RequestRejectFinalizeByCustomerNotification, BaseNotification, \
     SelectSpecialistForRequestNotification, RequestAcceptanceFinalizeBySpecialistNotification, \
@@ -28,6 +29,7 @@ from utils.permissions import PermissionFactory
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
+    @Logger().log_name()
     def post(self, request, format=''):
         up_file = request.FILES['file']
 
@@ -48,6 +50,7 @@ class RequestSearchView(generics.GenericAPIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @Logger().log_name()
     def get(self, request):
         query = json.loads(request.GET.get('q'))
         if request.user.get_role() == User.UserRole.Customer:
@@ -65,6 +68,7 @@ class LocationView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @Logger().log_name()
     def get(self, request):
         id_set = set(request.GET.getlist('id'))
         locations = Location.objects.filter(id__in=id_set)
@@ -86,6 +90,7 @@ class RequestSubmitView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         data = {'customer': UserCatalogue().search(query={'id': request.user.id, 'role': "C"})[0].full_user.id}
         requested_speciality = request.data['requested_speciality']
@@ -116,6 +121,7 @@ class RequestCancelByCustomerView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class()]
 
+    @Logger().log_name()
     def post(self, request):
         # TODO Add more checks on status of request
         request_id = request.data.get('request_id')
@@ -149,6 +155,7 @@ class RequestCancelByManagerView(APIView):
     permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class() | PermissionFactory(
         User.UserRole.TechnicalManager).get_permission_class()]
 
+    @Logger().log_name()
     def post(self, request):
         request_id = request.data.get('request_id')
         request = RequestCatalogue().search(query={'id': request_id})
@@ -201,6 +208,7 @@ class RequestInitialAcceptBySpecialistView(APIView):
             }, status=HTTP_400_BAD_REQUEST)
         return None
 
+    @Logger().log_name()
     def post(self, request):
         request_id = request.data.get('request_id')
         core_request = RequestCatalogue().search(query={"id": request_id})
@@ -254,6 +262,7 @@ class SelectSpecialistForRequestView(APIView):
             }, status=HTTP_400_BAD_REQUEST)
         return None
 
+    @Logger().log_name()
     def post(self, request):
         request_id = request.data.get('request_id')
         specialist_id = request.data.get('specialist_id')
@@ -292,6 +301,7 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
     def validate(self, r, c):
         pass
 
+    @Logger().log_name()
     def post(self, request):
         print(request.data)
         request_id = request.data.get('request_id')
@@ -396,6 +406,7 @@ class RequestStatusView(APIView):
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class() | PermissionFactory(
         User.UserRole.Specialist).get_permission_class()]
 
+    @Logger().log_name()
     def get(self, request):
         if request.user.get_role() == User.UserRole.Customer:
             requests = Request.objects.filter(customer=request.user.full_user)

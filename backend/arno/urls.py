@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'^api/feedback/', include('feedback.urls')), 
     url(r'^api/chats/', include('chat.urls')),
     url(r'^api/notification/', include('notification.urls')),
+    url(r'^api/log/', include('log.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

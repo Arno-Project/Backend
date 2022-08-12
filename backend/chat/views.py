@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from accounts.models import NormalUser
 from chat.models import MessageCatalogue, Message
 from chat.serializers import MessageSerializer
+from log.models import Logger
 from notification.notifications import BaseNotification, NewMessageNotification
 
 
@@ -29,6 +30,7 @@ class ChatsView(APIView):
 
         return JsonResponse(serialized.data, safe=False)
 
+    @Logger().log_name()
     def post(self, request, peer_id=None):
         if not peer_id:
             return JsonResponse()

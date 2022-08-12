@@ -13,8 +13,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from utils.permissions import PermissionFactory
 from accounts.constants import *
+from log.models import Logger
+from utils.permissions import PermissionFactory
 from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
     TechnicalManager, Customer, SpecialityCatalogue
 from .serializers import CompanyManagerSerializer, CustomerSerializer, \
@@ -40,6 +41,7 @@ class RegisterView(generics.GenericAPIView, ABC):
     def get_serializer_class(self):
         pass
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         role = self.kwargs.get('role')
         try:
@@ -95,6 +97,7 @@ class ManagerRegisterView(RegisterView):
 class LoginView(KnoxLoginView):
     permission_classes = (permissions.AllowAny,)
 
+    @Logger().log_name()
     def post(self, request, format=None):
         serializer = AuthTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -114,6 +117,10 @@ class LoginView(KnoxLoginView):
 class LogoutView(KnoxLogoutView):
     permission_classes = (permissions.IsAuthenticated,)
 
+    @Logger().log_name()
+    def post(self, request, format=None):
+        return super(LogoutView, self).post(request, format=None)
+
 
 class MyAccountView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -130,6 +137,7 @@ class EditProfileView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @Logger().log_name()
     def put(self, request, user_id=''):
         if user_id == '':
             user_id = request.user.id
@@ -184,6 +192,7 @@ class AccountsView(APIView):
         elif user.get_role() == User.UserRole.TechnicalManager:
             return TechnicalManagerFullSerializer if manager else TechnicalManagerSerializer
 
+    @Logger().log_name()
     def get(self, request):
         manager = request.user.is_manager
         query_dict = request.GET
@@ -203,6 +212,7 @@ class SpecialityView(APIView):
 
     authentication_classes = [TokenAuthentication]
 
+    @Logger().log_name()
     def get(self, request):
         id_set = set(request.GET.getlist('id'))
         if id_set:
@@ -212,6 +222,7 @@ class SpecialityView(APIView):
         serialized = SpecialitySerializer(specialities, many=True).data
         return JsonResponse({'specialities': serialized}, safe=False)
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         speciality = SpecialityCatalogue().search(query={'title': request.data.get('title')})
         if speciality.exists() and speciality.first().get_title() == request.data.get('title'):
@@ -249,6 +260,7 @@ class SpecialityAddRemoveView(APIView):
             specialist.remove_speciality(speciality)
         return HttpResponse('OK', status=status.HTTP_200_OK)
 
+    @Logger().log_name()
     def post(self, request, operation="", *args, **kwargs):
         if operation == "add":
             return self.add_remove_speciality(request, True, *args, **kwargs)
@@ -257,6 +269,7 @@ class SpecialityAddRemoveView(APIView):
         else:
             return JsonResponse({'error': INVALID_REQUEST}, status=status.HTTP_400_BAD_REQUEST)
 
+    @Logger().log_name()
     def delete(self, request, *args, **kwargs):
         return self.add_remove_speciality(request, False, *args, **kwargs)
 
@@ -266,6 +279,7 @@ class ConfirmSpecialistView(APIView):
     permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class() | PermissionFactory(
         User.UserRole.TechnicalManager).get_permission_class()]
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         specialist_id = request.data.get('specialist_id')
         try:

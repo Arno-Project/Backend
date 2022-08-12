@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'feedback.apps.FeedbackConfig',
     'notification.apps.NotificationConfig',
+    'log.apps.LogConfig',
     'corsheaders',
     'chat',
     'rest_framework',

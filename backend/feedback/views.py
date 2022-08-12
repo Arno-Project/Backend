@@ -11,6 +11,7 @@ from core.models import RequestCatalogue
 from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, FeedbackCatalogue
 from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, \
     FeedbackSerializer
+from log.models import Logger
 from utils.helper_funcs import ListAdapter
 from utils.permissions import PermissionFactory
 from feedback.constants import *
@@ -20,6 +21,7 @@ class EvaluationMetricView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
 
+    @Logger().log_name()
     def get(self, request, evaluation_metric_id='', *args, **kwargs):
         eval_metric = None
         if evaluation_metric_id:
@@ -38,12 +40,14 @@ class EvaluationMetricView(APIView):
 
         return JsonResponse(serializer.data, safe=False)
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         serializer = EvaluationMetricSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return JsonResponse(serializer.data)
 
+    @Logger().log_name()
     def delete(self, request, evaluation_metric_id='', *args, **kwargs):
         if evaluation_metric_id:
             ids = [int(evaluation_metric_id)]
@@ -59,6 +63,7 @@ class EvaluationMetricView(APIView):
         eval_metrics.delete()
         return JsonResponse({'ids': output_ids})
 
+    @Logger().log_name()
     def put(self, request, evaluation_metric_id='', *args, **kwargs):
         if not evaluation_metric_id:
             return JsonResponse({'error': NO_ID_PROVIDED_ERROR}, status=HTTP_400_BAD_REQUEST)
@@ -77,6 +82,7 @@ class SubmitSystemFeedbackView(APIView):
     permission_classes = [PermissionFactory(User.UserRole.Customer).get_permission_class() | PermissionFactory(
         User.UserRole.Specialist).get_permission_class()]
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         data = {
             'user': request.user.normal_user_user.id,
@@ -93,6 +99,7 @@ class SearchSystemFeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @Logger().log_name()
     def get(self, request):
         print(request.GET)
         system_feedback = SystemFeedbackCatalogue().search(json.loads(request.GET.get('q')))
@@ -104,6 +111,7 @@ class SubmitSystemFeedbackReplyView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()]
 
+    @Logger().log_name()
     def post(self, request, *args, **kwargs):
         system_feedback_id = request.data['system_feedback']
         system_feedback: SystemFeedback = SystemFeedback.objects.get(pk=system_feedback_id)
@@ -124,6 +132,7 @@ class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @Logger().log_name()
     def get(self, request, service_request_id=None):
         if service_request_id:
             feedback = FeedbackCatalogue().serach_by_request(service_request_id, request.user.id)
@@ -133,6 +142,7 @@ class FeedbackView(APIView):
             serialized = FeedbackSerializer(feedback)
             return JsonResponse(serialized.data, safe=False)
 
+    @Logger().log_name()
     def post(self, request, service_request_id):
         service_request = RequestCatalogue().search(query={'id': service_request_id})
         if not service_request:
