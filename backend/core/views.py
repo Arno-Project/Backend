@@ -151,6 +151,18 @@ class RequestEditView(APIView):
             }, status=HTTP_400_BAD_REQUEST)
 
         request_entity = request_entity.first()
+        if request.user.get_role() == User.UserRole.Customer:
+            if request_entity.customer.id != request.user.id:
+                return Response({
+                    'error': _(CANNOT_EDIT_SOMEONE_ELSE_REQUEST)
+                }, status=HTTP_400_BAD_REQUEST)
+            if not (
+                    request_entity.status == Request.RequestStatus.PENDING
+                    or request_entity.status == Request.RequestStatus.WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST
+            ):
+                return Response({
+                    'error': _(REQUEST_NOT_IN_EDITABLE_STATE)
+                }, status=HTTP_400_BAD_REQUEST)
 
         if request.data.get('requested_speciality', None):
             requested_speciality = request.data['requested_speciality']
@@ -167,15 +179,28 @@ class RequestEditView(APIView):
             request_entity.requested_speciality = SpecialityCatalogue().search(
                 query={'id': requested_speciality}).first()
 
-        for field in ['description', 'status', 'desired_start_time']:
+        for field in ['description', 'desired_start_time']:
             if field in request.data:
                 setattr(request_entity, field, request.data[field])
+
+        if request.data.get('status', None):
+            if request.user.get_role() != User.UserRole.Customer:
+                setattr(request_entity, 'status', request.data[field])
+            else:
+                return Response({
+                    'error': _(CANNOT_EDIT_STATUS)
+                }, status=HTTP_400_BAD_REQUEST)
 
         if request.data.get('location', None):
             request_entity.location = Location.objects.filter(pk=request.data['location']).first()
 
         if request.data.get('specialist', None):
-            request_entity.specialist = Specialist.objects.filter(pk=request.data['specialist']).first()
+            if request.user.get_role() != User.UserRole.Customer:
+                request_entity.specialist = Specialist.objects.filter(pk=request.data['specialist']).first()
+            else:
+                return Response({
+                    'error': _(CANNOT_EDIT_SPECIALSIT)
+                }, status=HTTP_400_BAD_REQUEST)
 
         request_entity.save()
         return JsonResponse({
