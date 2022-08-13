@@ -233,10 +233,6 @@ class RequestCancelByCustomerView(APIView):
             return Response({
                 'error': _(REQUEST_ALREADY_DONE_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
-        if _request.get_status() == Request.RequestStatus.CANCELED:
-            return Response({
-                'error': _(REQUEST_ALREADY_CANCELLED_ERROR)
-            }, status=HTTP_400_BAD_REQUEST)
 
         _request.cancel()
         return JsonResponse({
@@ -367,7 +363,6 @@ class SelectSpecialistForRequestView(APIView):
         core_request = RequestCatalogue().search(query={"id": request_id})
         specialist = UserCatalogue().search(query={"id": specialist_id})
 
-        print("SELCETTT", core_request, specialist)
         if result := self.validate(core_request, specialist):
             return result
         core_request = core_request.first()
@@ -510,4 +505,32 @@ class RequestStatusView(APIView):
         serialized = RequestSerializer(requests, many=True)
         return JsonResponse({
             'requests': serialized.data
+        })
+
+class RequestFinishView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class()]
+
+    @Logger().log_name()
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        user = request.user.full_user
+        request = RequestCatalogue().search(query={'id': request_id})
+        if not request.exists():
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_404_NOT_FOUND)
+        request = request[0]
+        if request.specialist != user:
+            return Response({
+                'error': _(REQUEST_NOT_FOUND_ERROR)
+            }, status=HTTP_404_NOT_FOUND)
+        if request.status != Request.RequestStatus.IN_PROGRESS:
+            return Response({
+                'error': _(REQUEST_NOT_IN_PROGRESS)
+            }, status=HTTP_400_BAD_REQUEST)
+
+        request.mark_as_finished()
+        return JsonResponse({
+            'request': RequestSerializer(request).data
         })

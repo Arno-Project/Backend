@@ -157,7 +157,11 @@ class Request(models.Model):
     def cancel(self):
         self.set_status(Request.RequestStatus.CANCELED)
         self.save()
-
+    
+    def mark_as_finished(self):
+        self.set_status(Request.RequestStatus.DONE)
+        self.set_completed_at(datetime.now())
+        self.save()
 
 class RequestCatalogue(metaclass=Singleton):
     requests = Request.objects.all()
