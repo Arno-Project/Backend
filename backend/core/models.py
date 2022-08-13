@@ -157,7 +157,11 @@ class Request(models.Model):
     def cancel(self):
         self.set_status(Request.RequestStatus.CANCELED)
         self.save()
-
+    
+    def mark_as_finished(self):
+        self.set_status(Request.RequestStatus.DONE)
+        self.set_completed_at(datetime.now())
+        self.save()
 
 class RequestCatalogue(metaclass=Singleton):
     requests = Request.objects.all()
@@ -182,7 +186,7 @@ class RequestCatalogue(metaclass=Singleton):
                 'role': User.UserRole.Specialist
             }
             users = UserCatalogue().search(query=specialist_query)
-            result = result.filter(specialist_normal_user__user__in=users)
+            result = result.filter(specialist__normal_user__user__in=users)
 
         if query.get('speciality'):
             speciality_query = query.get('speciality')['id']
