@@ -186,7 +186,7 @@ class RequestCatalogue(metaclass=Singleton):
                 'role': User.UserRole.Specialist
             }
             users = UserCatalogue().search(query=specialist_query)
-            result = result.filter(specialist_normal_user__user__in=users)
+            result = result.filter(specialist__normal_user__user__in=users)
 
         if query.get('speciality'):
             speciality_query = query.get('speciality')['id']

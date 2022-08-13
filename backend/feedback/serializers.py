@@ -1,6 +1,6 @@
 from accounts import serializers
 from core.serializers import RequestSerializer
-from feedback.models import SystemFeedback, SystemFeedbackReply, EvaluationMetric, Feedback
+from feedback.models import SystemFeedback, SystemFeedbackReply, EvaluationMetric, Feedback, MetricScore
 
 
 class EvaluationMetricSerializer(serializers.ModelSerializer):
@@ -38,11 +38,24 @@ class SystemFeedbackSerializer(serializers.ModelSerializer):
         }
 
 
+class MetricScoreSerializer(serializers.ModelSerializer):
+    # metric = EvaluationMetricSerializer()
+
+    class Meta:
+        model = MetricScore
+        fields = ('metric', 'score')
+
+
 class FeedbackSerializer(serializers.ModelSerializer):
-    metric_scores = EvaluationMetricSerializer(many=True)
-    request = RequestSerializer()
+    # metric_scores = MetricScoreSerializer(many=True)
 
     class Meta:
         model = Feedback
         fields = ('id', 'created_at', 'description',
-                  'metric_scores', 'request')
+                  'metric_scores', 'request', 'user')
+
+        read_only_fields = ('id', 'created_at')
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'created_at': {'read_only': True},
+        }

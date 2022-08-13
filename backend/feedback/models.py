@@ -49,7 +49,8 @@ class EvaluationMetricCatalogue(metaclass=Singleton):
             return result
         for field in ['id']:
             if query.get(field):
-                result = result.filter(pk__in=ListAdapter().python_ensure_list(query[field]))
+                result = result.filter(
+                    pk__in=ListAdapter().python_ensure_list(query[field]))
         for field in ['title', 'description']:
             if query.get(field):
                 result = result.filter(
@@ -67,7 +68,6 @@ class EvaluationMetricCatalogue(metaclass=Singleton):
 class MetricScore(models.Model):
     metric = models.ForeignKey(EvaluationMetric, on_delete=models.CASCADE)
     score = models.IntegerField(null=False, blank=False)
-    user = models.ForeignKey(accounts.models.User, on_delete=models.CASCADE)
 
     def get_metric(self):
         return self.metric
@@ -83,7 +83,7 @@ class MetricScore(models.Model):
 
 
 class Feedback(models.Model):
-    description = models.TextField(null=False, blank=False)
+    description = models.TextField(null=False, blank=True)
     request = models.ForeignKey(Request, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     metric_scores = models.ManyToManyField(MetricScore, blank=True, null=True)
@@ -107,6 +107,12 @@ class Feedback(models.Model):
     def submit_scores(self, scores: List[MetricScore]):
         pass
 
+    def delete(self, *args, **kwargs):
+        print("deleting")
+        for s in self.metric_scores.all():
+            s.delete()
+        return super().delete(*args, **kwargs)
+
 
 class FeedbackCatalogue(metaclass=Singleton):
     feedbacks = Feedback.objects.all()
@@ -114,9 +120,9 @@ class FeedbackCatalogue(metaclass=Singleton):
     def get_feedback_list(self):
         return self.feedbacks
 
-    def serach_by_request(self, request_id, user_id) -> Feedback:
+    def search_by_request(self, request_id, user_id) -> Feedback:
         try:
-            return self.feedbacks.get(request__id=request_id, user__user__id=user_id)
+            return self.feedbacks.filter(request__id=request_id, user__user__id=user_id)
         except Feedback.DoesNotExist:
             return None
 
