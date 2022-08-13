@@ -102,7 +102,8 @@ class RequestSubmitView(APIView):
                 0].full_user.id
         else:
             if request.data.get('customer', None):
-                customer_id = request.data.get('customer')
+                customer_id = UserCatalogue().search(query={'id': request.data.get('customer'), 'role': "C"})[
+                0].full_user.id
             else:
                 return Response({
                     'error': _(INVALID_REQUEST)
