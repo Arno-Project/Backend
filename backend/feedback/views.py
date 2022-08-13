@@ -13,7 +13,7 @@ from accounts.models import User, NormalUser
 from core.models import RequestCatalogue
 from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, FeedbackCatalogue
 from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, \
-    FeedbackSerializer
+    FeedbackSerializer, FeedbackReadOnlySerializer
 from log.models import Logger
 from utils.helper_funcs import ListAdapter
 from utils.permissions import PermissionFactory
@@ -158,18 +158,22 @@ class FeedbackView(APIView):
                           PermissionFactory(User.UserRole.Customer).get_permission_class()]
 
     @Logger().log_name()
-    def get(self, request, service_request_id=None):
+    def get(self, request):
+        service_request_id = request.GET.get('request_id', None)
+
         if service_request_id:
+            print("req id", service_request_id)
             feedback = FeedbackCatalogue().search_by_request(
                 service_request_id, request.user.id)
             if not feedback:
                 return JsonResponse({'error': FEEDBACK_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
 
-            serialized = FeedbackSerializer(feedback)
+            print(feedback)
+            serialized = FeedbackReadOnlySerializer(feedback,  many=True)
             return JsonResponse(serialized.data, safe=False)
 
         feedbacks = FeedbackCatalogue().get_feedback_list()
-        serialized = FeedbackSerializer(feedbacks, many=True)
+        serialized = FeedbackReadOnlySerializer(feedbacks, many=True)
         return JsonResponse(serialized.data, safe=False)
 
     @Logger().log_name()
@@ -209,7 +213,7 @@ class FeedbackView(APIView):
                 'metric': int(metric_score_dict['metric_id']),
                 'score': metric_score_dict.get('rating', 50),
             }
-            
+
             serializer = MetricScoreSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             metric_score = serializer.save()
@@ -224,7 +228,7 @@ class FeedbackView(APIView):
 
         if old_feedbacks:
             print("old_feedback", old_feedbacks)
-            for f in old_feedbacks: # dont use bulk delete
+            for f in old_feedbacks:  # dont use bulk delete
                 f.delete()
 
         serializer = FeedbackSerializer(data=data)

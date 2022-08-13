@@ -47,8 +47,6 @@ class MetricScoreSerializer(serializers.ModelSerializer):
 
 
 class FeedbackSerializer(serializers.ModelSerializer):
-    # metric_scores = MetricScoreSerializer(many=True)
-
     class Meta:
         model = Feedback
         fields = ('id', 'created_at', 'description',
@@ -59,3 +57,11 @@ class FeedbackSerializer(serializers.ModelSerializer):
             'id': {'read_only': True},
             'created_at': {'read_only': True},
         }
+
+class FeedbackReadOnlySerializer(FeedbackSerializer):
+    metric_scores = MetricScoreSerializer(many=True)
+    user = serializers.NormalUserSerializer()
+
+    class Meta(FeedbackSerializer.Meta):
+        model = Feedback
+        fields = '__all__'
