@@ -80,7 +80,7 @@ class CustomerFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = Customer
         fields = ('id',)
-        flatten = [('normal_user', NormalUserSerializer)]
+        flatten = [('normal_user', NormalUserFullSerializer)]
 
 
 # TODO add to class diagram
@@ -135,14 +135,14 @@ class CompanyManagerFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = CompanyManager
         fields = ('id',)
-        flatten = [('manager_user', ManagerUserSerializer)]
+        flatten = [('manager_user', ManagerUserFullSerializer)]
 
 
 class TechnicalManagerFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = CompanyManager
         fields = ('id',)
-        flatten = [('manager_user', ManagerUserSerializer)]
+        flatten = [('manager_user', ManagerUserFullSerializer)]
 
 
 class TechnicalManagerSerializer(FlattenMixin, ModelSerializer):

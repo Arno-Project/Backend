@@ -198,6 +198,7 @@ class AccountsView(APIView):
         manager = request.user.is_manager
         query_dict = request.GET
         users = UserCatalogue().search(query_dict)
+        
         serialized = [self.get_serializer_class(user, manager)(user.full_user).data for user in users]
         return JsonResponse({'users': serialized}, safe=False)
 
@@ -344,7 +345,7 @@ class ConfirmSpecialistView(APIView):
     def post(self, request, *args, **kwargs):
         specialist_id = request.data.get('specialist_id')
         try:
-            specialist = UserCatalogue().search(query={'specialist_id': specialist_id, 'role': "S"})[0].full_user
+            specialist = UserCatalogue().search(query={'id': specialist_id, 'role': "S"})[0].full_user
         except IndexError:
             return JsonResponse({'error': SPECIALIST_NOT_FOUND_ERROR}, status=status.HTTP_400_BAD_REQUEST)
         if specialist.get_is_validated():
