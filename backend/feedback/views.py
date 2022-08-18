@@ -288,14 +288,24 @@ class ScorePolicyView(APIView):
         serialized = ScorePolicySerializer(score_policy, many=many)
         return JsonResponse(serialized.data, safe=False)
 
+    def find_same_score(self, score):
+        score_policies = ScorePolicy.objects.all()
+        for score_policy in score_policies:
+            if abs(score_policy.minimum_score - float(score)) < 0.0001:
+                return score_policy
+        return None
+
     @Logger().log_name()
     def post(self, request, score_policy_id=''):
         data = {
             'minimum_score': request.data.get('minimum_score', 0),
             'allowed_requests': request.data.get('allowed_requests', 0),
         }
-
-        serializer = ScorePolicySerializer(data=data)
+        score_policy = self.find_same_score(data['minimum_score'])
+        if score_policy:
+            serializer = ScorePolicySerializer(score_policy, data=data)
+        else:
+            serializer = ScorePolicySerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return JsonResponse(serializer.data)
