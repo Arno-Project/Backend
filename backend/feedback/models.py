@@ -209,3 +209,35 @@ class SystemFeedbackCatalogue(metaclass=Singleton):
                 result = result.filter(reply__isnull=not query[field])
 
         return result
+
+
+class ScoreCalculator():
+    def __init__(self, normal_user: NormalUser):
+        self.normal_user = normal_user
+
+    def update_score(self):
+        if self.normal_user.user.get_role() == accounts.models.User.UserRole.Customer:
+            requests = Request.objects.filter(customer__id=self.normal_user.user.full_user.id)
+        elif self.normal_user.user.get_role() == accounts.models.User.UserRole.Specialist:
+            requests = Request.objects.filter(specialist__id=self.normal_user.user.full_user.id)
+        else:
+            raise Exception()
+
+        feedbacks = []
+        for request in requests:
+            feedbacks_ = Feedback.objects.filter(request__id=request.id).exclude(
+                user_id=self.normal_user.id)
+            feedbacks.extend(feedbacks_)
+
+        counter = 0
+        sum = 0
+        for feedback in feedbacks:
+            for metric_score in feedback.metric_scores.all():
+                sum += metric_score.score
+                counter += 1
+
+        if counter == 0:
+            self.normal_user.set_score(5)
+        else:
+            self.normal_user.set_score(sum / counter)
+        self.normal_user.save()
