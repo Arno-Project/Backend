@@ -2,7 +2,7 @@ import json
 
 from django.http import JsonResponse
 from rest_framework.response import Response
-
+from rest_condition import And, Or, Not
 from .serializers import MetricScoreSerializer, ScorePolicySerializer
 from .models import EvaluationMetric, MetricScore, ScoreCalculator, ScorePolicy
 from knox.auth import TokenAuthentication
@@ -18,7 +18,7 @@ from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySe
     FeedbackSerializer, FeedbackReadOnlySerializer
 from log.models import Logger
 from utils.helper_funcs import ListAdapter
-from utils.permissions import PermissionFactory
+from utils.permissions import PermissionFactory, IsReadyOnlyRequest
 from feedback.constants import *
 
 
@@ -156,8 +156,15 @@ class SubmitSystemFeedbackReplyView(APIView):
 
 class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [PermissionFactory(User.UserRole.Specialist).get_permission_class() |
-                          PermissionFactory(User.UserRole.Customer).get_permission_class()]
+    permission_classes = [Or(PermissionFactory(User.UserRole.Specialist).get_permission_class(),
+                             PermissionFactory(User.UserRole.Customer).get_permission_class(),
+                             And(IsReadyOnlyRequest,
+                                 PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()
+                                 ),
+                             And(IsReadyOnlyRequest,
+                                 PermissionFactory(User.UserRole.CompanyManager).get_permission_class()
+                                 )
+                             )]
 
     @Logger().log_name()
     def get(self, request):
@@ -261,9 +268,10 @@ class ForceUpdateScoresView(APIView):
 class ScorePolicyView(APIView):
     # TODO Class diagram
     authentication_classes = [TokenAuthentication]
-    permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
-                          PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
-                          PermissionFactory(User.UserRole.Specialist).get_permission_class()
+    permission_classes = [Or(PermissionFactory(User.UserRole.TechnicalManager).get_permission_class(),
+                             PermissionFactory(User.UserRole.CompanyManager).get_permission_class(),
+                             And(IsReadyOnlyRequest,
+                                 PermissionFactory(User.UserRole.Specialist).get_permission_class()))
                           ]
 
     @Logger().log_name()
@@ -282,10 +290,6 @@ class ScorePolicyView(APIView):
 
     @Logger().log_name()
     def post(self, request, score_policy_id=''):
-        if request.user.get_role() == User.UserRole.Specialist:
-            return Response({
-                'error': _(ACCESS_DENIED_ERROR)
-            }, status=HTTP_403_FORBIDDEN)
         data = {
             'minimum_score': request.data.get('minimum_score', 0),
             'allowed_requests': request.data.get('allowed_requests', 0),
@@ -298,10 +302,6 @@ class ScorePolicyView(APIView):
 
     @Logger().log_name()
     def put(self, request, score_policy_id=''):
-        if request.user.get_role() == User.UserRole.Specialist:
-            return Response({
-                'error': _(ACCESS_DENIED_ERROR)
-            }, status=HTTP_403_FORBIDDEN)
         try:
             score_policy = ScorePolicy.objects.get(pk=score_policy_id)
         except ScorePolicy.DoesNotExist:
@@ -319,10 +319,6 @@ class ScorePolicyView(APIView):
 
     @Logger().log_name()
     def delete(self, request, score_policy_id=''):
-        if request.user.get_role() == User.UserRole.Specialist:
-            return Response({
-                'error': _(ACCESS_DENIED_ERROR)
-            }, status=HTTP_403_FORBIDDEN)
         try:
             score_policy = ScorePolicy.objects.get(pk=score_policy_id)
         except ScorePolicy.DoesNotExist:
