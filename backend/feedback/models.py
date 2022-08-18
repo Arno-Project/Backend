@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 from django.db import models
@@ -6,6 +7,7 @@ from django.db.models import Q
 
 import accounts.models
 from accounts.models import NormalUser
+from arno.settings import USE_SCORE_LIMIT
 from core.models import Request
 from utils.Singleton import Singleton
 
@@ -261,3 +263,22 @@ class ScoreCalculator():
         else:
             self.normal_user.set_score(sum / counter)
         self.normal_user.save()
+
+
+class ScorePolicyChecker():
+    # TODO Class diagram
+
+    def __init__(self, score):
+        self.score = score
+
+    def get_allowed_request(self):
+        if not USE_SCORE_LIMIT:
+            return sys.maxsize
+        score_policies = ScorePolicy.objects.all().order_by('-minimum_score')
+        best_allowed_request = 0
+        for score_policy in score_policies:
+            if self.score >= score_policy.minimum_score:
+                best_allowed_request = score_policy.allowed_requests
+            else:
+                break
+        return best_allowed_request

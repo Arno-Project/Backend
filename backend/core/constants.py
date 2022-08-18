@@ -32,3 +32,5 @@ CANNOT_EDIT_STATUS = "شما اجازه تغییر وضعیت درخواست ر�
 IS_ACCEPT_REQUIRED_ERROR = "is_accept is required"
 SPECIALIST_ID_REQUIRED_ERROR = "specialist_id is required"
 REQUEST_ID_REQUIRED_ERROR = "request_id is required"
+
+REQUEST_LIMIT_REACHED_ERROR = u"شما با توجه به میزان امتیاز خود به سقف مجاز درخواست رسیده‌اید"

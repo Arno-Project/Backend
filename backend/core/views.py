@@ -15,10 +15,11 @@ from rest_framework.views import APIView
 
 from accounts.models import User, UserCatalogue, SpecialityCatalogue, Specialist
 from accounts.serializers import SpecialitySerializer
-from arno.settings import MEDIA_ROOT
+from arno.settings import MEDIA_ROOT, USE_SCORE_LIMIT
 from core.constants import *
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
+from feedback.models import ScorePolicyChecker, ScoreCalculator
 from log.models import Logger
 from notification.notifications import RequestInitialAcceptBySpecialistNotification, \
     RequestAcceptanceFinalizeByCustomerNotification, RequestRejectFinalizeByCustomerNotification, BaseNotification, \
@@ -103,7 +104,7 @@ class RequestSubmitView(APIView):
         else:
             if request.data.get('customer', None):
                 customer_id = UserCatalogue().search(query={'id': request.data.get('customer'), 'role': "C"})[
-                0].full_user.id
+                    0].full_user.id
             else:
                 return Response({
                     'error': _(INVALID_REQUEST)
@@ -321,6 +322,15 @@ class RequestInitialAcceptBySpecialistView(APIView):
             return Response({
                 'error': _(YOU_DONT_HAVE_SPECIALITY_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
+
+        if USE_SCORE_LIMIT:
+            on_going_request_count = RequestCatalogue().search(query={'specialist': {'id': user.full_user.id}}).exclude(
+                status__exact=Request.RequestStatus.DONE).exclude(status__exact=Request.RequestStatus.CANCELED).count()
+            ScoreCalculator(request.user.general_user).update_score()
+            if on_going_request_count >= ScorePolicyChecker(request.user.general_user.score).get_allowed_request():
+                return Response({
+                    'error': _(REQUEST_LIMIT_REACHED_ERROR)
+                }, status=HTTP_400_BAD_REQUEST)
         return None
 
     @Logger().log_name()
@@ -436,6 +446,18 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
             }, status=HTTP_400_BAD_REQUEST)
         # TODO, More OOP Refactor
         if is_accept == "1":
+            if USE_SCORE_LIMIT:
+                if request.user.get_role() == User.UserRole.Specialist:
+                    on_going_request_count = RequestCatalogue(). \
+                        search(query={'specialist': {'id': request.user.full_user.id}}).exclude(
+                        status__exact=Request.RequestStatus.DONE).exclude(
+                        status__exact=Request.RequestStatus.CANCELED).count()
+                    ScoreCalculator(request.user.general_user).update_score()
+                    if on_going_request_count >= ScorePolicyChecker(
+                            request.user.general_user.score).get_allowed_request():
+                        return Response({
+                            'error': _(REQUEST_LIMIT_REACHED_ERROR)
+                        }, status=HTTP_400_BAD_REQUEST)
             core_request.set_status(Request.RequestStatus.IN_PROGRESS)
             self.notification_builder_accept(core_request).build()
         else:
@@ -531,6 +553,7 @@ class RequestStatusView(APIView):
         return JsonResponse({
             'requests': serialized.data
         })
+
 
 class RequestFinishView(APIView):
     authentication_classes = [TokenAuthentication]
