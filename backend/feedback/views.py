@@ -3,7 +3,7 @@ import json
 from django.http import JsonResponse
 
 from .serializers import MetricScoreSerializer
-from .models import EvaluationMetric, MetricScore
+from .models import EvaluationMetric, MetricScore, ScoreCalculator
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
@@ -169,7 +169,7 @@ class FeedbackView(APIView):
                 return JsonResponse({'error': FEEDBACK_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
 
             print(feedback)
-            serialized = FeedbackReadOnlySerializer(feedback,  many=True)
+            serialized = FeedbackReadOnlySerializer(feedback, many=True)
             return JsonResponse(serialized.data, safe=False)
 
         feedbacks = FeedbackCatalogue().get_feedback_list()
@@ -236,3 +236,20 @@ class FeedbackView(APIView):
         feedback = serializer.save()
 
         return JsonResponse(serializer.data)
+
+
+class ForceUpdateScoresView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
+                          PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+
+    @Logger().log_name()
+    def post(self, request, user_id=''):
+        if user_id == '':
+            users = NormalUser.objects.all()
+        else:
+            users = NormalUser.objects.filter(pk=user_id)
+        for user in users:
+            ScoreCalculator(user).update_score()
+
+        return JsonResponse({'success': True})
