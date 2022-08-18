@@ -26,7 +26,7 @@ class PermissionFactory():
                 permitted = super().has_object_permission(request, view, obj)
                 if permitted:
                     return True
-                if request.user.get_role() == user_type:
+                if hasattr(request.user, 'get_role') and request.user.get_role() == user_type:
                     return True
                 return False
 

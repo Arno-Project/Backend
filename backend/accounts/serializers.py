@@ -161,10 +161,10 @@ class RegisterSerializerFactory:
         concrete_class = self.concrete_class
         middle_class = self.middle_class
         role_mapping = {
-            Customer: User.UserRole.Customer[0],
-            Specialist: User.UserRole.Specialist[0],
-            CompanyManager: User.UserRole.CompanyManager[0],
-            TechnicalManager: User.UserRole.TechnicalManager[0]
+            Customer: User.UserRole.Customer,
+            Specialist: User.UserRole.Specialist,
+            CompanyManager: User.UserRole.CompanyManager,
+            TechnicalManager: User.UserRole.TechnicalManager
         }
 
         class Serializer(ModelSerializer):
