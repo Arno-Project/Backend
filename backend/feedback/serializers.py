@@ -1,6 +1,6 @@
 from accounts import serializers
 from core.serializers import RequestSerializer
-from feedback.models import SystemFeedback, SystemFeedbackReply, EvaluationMetric, Feedback, MetricScore
+from feedback.models import SystemFeedback, SystemFeedbackReply, EvaluationMetric, Feedback, MetricScore, ScorePolicy
 
 
 class EvaluationMetricSerializer(serializers.ModelSerializer):
@@ -58,10 +58,17 @@ class FeedbackSerializer(serializers.ModelSerializer):
             'created_at': {'read_only': True},
         }
 
+
 class FeedbackReadOnlySerializer(FeedbackSerializer):
     metric_scores = MetricScoreSerializer(many=True)
     user = serializers.NormalUserSerializer()
 
     class Meta(FeedbackSerializer.Meta):
         model = Feedback
+        fields = '__all__'
+
+
+class ScorePolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScorePolicy
         fields = '__all__'

@@ -1,13 +1,15 @@
 import json
 
 from django.http import JsonResponse
+from rest_framework.response import Response
 
-from .serializers import MetricScoreSerializer
-from .models import EvaluationMetric, MetricScore, ScoreCalculator
+from .serializers import MetricScoreSerializer, ScorePolicySerializer
+from .models import EvaluationMetric, MetricScore, ScoreCalculator, ScorePolicy
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
 from rest_framework.views import APIView
+from django.utils.translation import gettext_lazy as _
 
 from accounts.models import User, NormalUser
 from core.models import RequestCatalogue
@@ -239,6 +241,7 @@ class FeedbackView(APIView):
 
 
 class ForceUpdateScoresView(APIView):
+    # TODO Class diagram
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
                           PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
@@ -253,3 +256,76 @@ class ForceUpdateScoresView(APIView):
             ScoreCalculator(user).update_score()
 
         return JsonResponse({'success': True})
+
+
+class ScorePolicyView(APIView):
+    # TODO Class diagram
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
+                          PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
+                          PermissionFactory(User.UserRole.Specialist).get_permission_class()
+                          ]
+
+    @Logger().log_name()
+    def get(self, request, score_policy_id=''):
+        many = True
+        if score_policy_id != '':
+            try:
+                score_policy = ScorePolicy.objects.get(pk=score_policy_id)
+            except ScorePolicy.DoesNotExist:
+                return JsonResponse({'error': SCORE_POLICY_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
+            many = False
+        else:
+            score_policy = ScorePolicy.objects.all()
+        serialized = ScorePolicySerializer(score_policy, many=many)
+        return JsonResponse(serialized.data, safe=False)
+
+    @Logger().log_name()
+    def post(self, request, score_policy_id=''):
+        if request.user.get_role() == User.UserRole.Specialist:
+            return Response({
+                'error': _(ACCESS_DENIED_ERROR)
+            }, status=HTTP_403_FORBIDDEN)
+        data = {
+            'minimum_score': request.data.get('minimum_score', 0),
+            'allowed_requests': request.data.get('allowed_requests', 0),
+        }
+
+        serializer = ScorePolicySerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return JsonResponse(serializer.data)
+
+    @Logger().log_name()
+    def put(self, request, score_policy_id=''):
+        if request.user.get_role() == User.UserRole.Specialist:
+            return Response({
+                'error': _(ACCESS_DENIED_ERROR)
+            }, status=HTTP_403_FORBIDDEN)
+        try:
+            score_policy = ScorePolicy.objects.get(pk=score_policy_id)
+        except ScorePolicy.DoesNotExist:
+            return JsonResponse({'error': SCORE_POLICY_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
+
+        data = {
+            'minimum_score': request.data.get('minimum_score', score_policy.get_minimum_score()),
+            'allowed_requests': request.data.get('allowed_requests', score_policy.get_allowed_requests()),
+        }
+
+        serializer = ScorePolicySerializer(score_policy, data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return JsonResponse(serializer.data)
+
+    @Logger().log_name()
+    def delete(self, request, score_policy_id=''):
+        if request.user.get_role() == User.UserRole.Specialist:
+            return Response({
+                'error': _(ACCESS_DENIED_ERROR)
+            }, status=HTTP_403_FORBIDDEN)
+        try:
+            score_policy = ScorePolicy.objects.get(pk=score_policy_id)
+        except ScorePolicy.DoesNotExist:
+            return JsonResponse({'error': SCORE_POLICY_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
+        score_policy.delete()
+        return JsonResponse({})
