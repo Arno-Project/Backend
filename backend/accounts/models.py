@@ -76,7 +76,7 @@ class User(AbstractUser):
 
 class NormalUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="normal_user_user")
-    score = models.IntegerField(default=0)
+    score = models.FloatField(default=0)
 
     def __str__(self):
         return self.user.__str__()
