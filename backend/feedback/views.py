@@ -243,6 +243,10 @@ class FeedbackView(APIView):
         serializer = FeedbackSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         feedback = serializer.save()
+        if request.user.get_role() == User.UserRole.Specialist:
+            ScoreCalculator(feedback.request.customer.normal_user).update_score()
+        else:
+            ScoreCalculator(feedback.request.specialist.normal_user).update_score()
 
         return JsonResponse(serializer.data)
 

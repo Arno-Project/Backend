@@ -238,6 +238,7 @@ class ScoreCalculator():
         self.normal_user = normal_user
 
     def update_score(self):
+        print("UPDATE SCORE")
         if self.normal_user.user.get_role() == accounts.models.User.UserRole.Customer:
             requests = Request.objects.filter(customer__id=self.normal_user.user.full_user.id)
         elif self.normal_user.user.get_role() == accounts.models.User.UserRole.Specialist:
@@ -257,7 +258,7 @@ class ScoreCalculator():
             for metric_score in feedback.metric_scores.all():
                 sum += metric_score.score
                 counter += 1
-
+        
         if counter == 0:
             self.normal_user.set_score(5)
         else:
