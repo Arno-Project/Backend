@@ -154,7 +154,7 @@ class RequestEditView(APIView):
 
         request_entity = request_entity.first()
         if request.user.get_role() == User.UserRole.Customer:
-            if request_entity.customer.id != request.user.id:
+            if request_entity.customer.normal_user.user.id != request.user.id:
                 return Response({
                     'error': _(CANNOT_EDIT_SOMEONE_ELSE_REQUEST)
                 }, status=HTTP_400_BAD_REQUEST)
