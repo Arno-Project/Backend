@@ -9,6 +9,7 @@ from phone_field import PhoneField
 from accounts.constants import *
 from utils.Singleton import Singleton
 from utils.helper_funcs import ListAdapter
+from utils.sortable_catalogue import SortableCatalogue
 
 
 class User(AbstractUser):
@@ -279,8 +280,8 @@ class UserCatalogue(metaclass=Singleton):
 
         if query.get('name'):
             result = result.filter(
-                    Q(**{'first_name__icontains': query['name']}) |
-                     Q(**{'last_name__icontains': query['name']}))
+                Q(**{'first_name__icontains': query['name']}) |
+                Q(**{'last_name__icontains': query['name']}))
 
         # filter User objects that exist in Customer Table
         if query.get('roles'):

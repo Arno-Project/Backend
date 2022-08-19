@@ -167,6 +167,7 @@ class Request(models.Model):
 
 
 class RequestCatalogue(metaclass=Singleton):
+    sortable_fields=['status','completed_at','updated_at','customer__normal_user__score']
     @property
     def requests(self):
         return Request.objects.all()
@@ -218,6 +219,20 @@ class RequestCatalogue(metaclass=Singleton):
         for field in ['desired_start_time_lte', 'accepted_at_lte', 'completed_at_lte']:
             if query.get(field):
                 result = result.filter(**{'_'.join(field.split('_')[:-1]) + "__lte": query.get(field)})
+
+        if query.get("sort"):
+            sort_fields = query.get("sort").split(",")
+            if len(sort_fields) == 0:
+                return result
+            good_fields = []
+            for field in sort_fields:
+                if field[0] == '-':
+                    if field[1:] in self.sortable_fields:
+                        good_fields.append(field)
+                else:
+                    if field in self.sortable_fields:
+                        good_fields.append(field)
+            return result.order_by(*good_fields)
 
         return result
 
