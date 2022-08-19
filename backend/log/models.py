@@ -74,7 +74,9 @@ class Logger(metaclass=Singleton):
 
 
 class LogCatalogue(metaclass=Singleton):
-    logs = Log.objects.all()
+    @property
+    def logs(self):
+        return Log.objects.all()
 
     def search(self, query: dict):
         result = self.logs

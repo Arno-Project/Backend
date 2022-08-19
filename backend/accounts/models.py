@@ -142,7 +142,9 @@ class Speciality(models.Model):
 
 
 class SpecialityCatalogue(metaclass=Singleton):
-    specialities = Speciality.objects.all()
+    @property
+    def specialities(self):
+        return Speciality.objects.all()
 
     def search(self, query):
         result = self.specialities
@@ -255,7 +257,9 @@ class TechnicalManager(models.Model):
 
 
 class UserCatalogue(metaclass=Singleton):
-    users = User.objects.all()
+    @property
+    def users(self):
+        return User.objects.all()
 
     def search(self, query):
         result = self.users

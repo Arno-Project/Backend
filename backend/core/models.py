@@ -42,7 +42,9 @@ class Location(models.Model):
 
 
 class LocationCatalogue(metaclass=Singleton):
-    locations = Location.objects.all()
+    @property
+    def locations(self):
+        return Location.objects.all()
 
     def search(self, query):
         print("Location Catalogue", query)
@@ -164,7 +166,9 @@ class Request(models.Model):
         self.save()
 
 class RequestCatalogue(metaclass=Singleton):
-    requests = Request.objects.all()
+    @property
+    def requests(self):
+        return Request.objects.all()
 
     def search(self, query: dict):
         result = self.requests

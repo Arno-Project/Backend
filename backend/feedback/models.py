@@ -41,7 +41,9 @@ class EvaluationMetric(models.Model):
 
 
 class EvaluationMetricCatalogue(metaclass=Singleton):
-    metrics = EvaluationMetric.objects
+    @property
+    def metrics(self):
+        return EvaluationMetric.objects.all()
 
     def search(self, query):
         result = self.metrics
@@ -117,7 +119,9 @@ class Feedback(models.Model):
 
 
 class FeedbackCatalogue(metaclass=Singleton):
-    feedbacks = Feedback.objects.all()
+    @property
+    def feedbacks(self):
+        return Feedback.objects.all()
 
     def get_feedback_list(self):
         return self.feedbacks
@@ -196,7 +200,9 @@ class SystemFeedback(models.Model):
 
 
 class SystemFeedbackCatalogue(metaclass=Singleton):
-    feedbacks = SystemFeedback.objects.all()
+    @property
+    def feedbacks(self):
+        return SystemFeedback.objects.all()
 
     def search(self, query):
         result = self.feedbacks

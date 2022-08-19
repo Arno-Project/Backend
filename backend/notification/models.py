@@ -63,7 +63,9 @@ class Notification(models.Model):
 
 
 class NotificationCatalogue(metaclass=Singleton):
-    notifications = Notification.objects
+    @property
+    def notifications(self):
+        return Notification.objects.all()
 
     def get_by_id(self, id):
         return self.notifications.get(pk=id)
