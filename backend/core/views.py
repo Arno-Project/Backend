@@ -60,7 +60,10 @@ class RequestSearchView(generics.GenericAPIView):
             query['customer']['id'] = request.user.id
         if request.user.get_role() == User.UserRole.Specialist:
             query['speciality'] = {}
-            query['speciality']['id'] = request.user.full_user.get_speciality()
+            if request.user.full_user.get_speciality():
+                query['speciality']['id'] = map(lambda x: x.id, request.user.full_user.get_speciality())
+            else:
+                query['speciality']['id'] = []
         requests = RequestCatalogue().search(query)
         serialized = RequestSerializer(requests, many=True)
         return JsonResponse(serialized.data, safe=False)
