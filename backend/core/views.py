@@ -404,7 +404,7 @@ class SelectSpecialistForRequestView(APIView):
                 'error': _(SPECIALIST_ID_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
         core_request = RequestCatalogue().search(query={"id": request_id})
-        specialist = UserCatalogue().search(query={"id": specialist_id})
+        specialist = UserCatalogue().search(query={"id": specialist_id , 'requester_type': request.user.get_role()})
 
         if result := self.validate(core_request, specialist):
             return result

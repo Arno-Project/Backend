@@ -196,8 +196,9 @@ class AccountsView(APIView):
     @Logger().log_name()
     def get(self, request):
         manager = request.user.is_manager
-        query_dict = request.GET
-        users = UserCatalogue().search(query_dict)
+        query_dict = request.query_params.dict()
+        query_dict_ = {**query_dict, 'requester_type': request.user.get_role()}
+        users = UserCatalogue().search(query_dict_)
 
         serialized = [self.get_serializer_class(user, manager)(user.full_user).data for user in users]
         return JsonResponse({'users': serialized}, safe=False)

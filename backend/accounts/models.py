@@ -262,7 +262,7 @@ class UserCatalogue(metaclass=Singleton):
         return User.objects.all()
 
     VALID_SORT_FIELDS = ['score', 'first_name', 'last_name',
-                         'phone', 'username', 'email', 'role',  'date_joined']
+                         'phone', 'username', 'email', 'role', 'date_joined']
 
     def search(self, query):
         result = self.users
@@ -291,6 +291,7 @@ class UserCatalogue(metaclass=Singleton):
             roles = query['roles'].split(',')
             result = result.filter(Q(role__in=roles))
         if query.get('role'):
+            print(query.get('role'))
             result = result.filter(Q(role__icontains=query['role']))
             if query['role'] == User.UserRole.Specialist:
                 for field in ['speciality']:
@@ -302,6 +303,11 @@ class UserCatalogue(metaclass=Singleton):
         if query.get('specialist_id'):
             result = result.filter(
                 Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
+
+        if query.get('requester_type'):
+            if query.get('requester_type') == User.UserRole.Customer:
+                result = result.exclude(Q(role__in=[User.UserRole.Specialist]) & Q(
+                    normal_user_user__specialist_normal_user__is_validated=False))
 
         if query.get('sort'):
             result = result.annotate(
