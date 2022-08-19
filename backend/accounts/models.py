@@ -9,6 +9,7 @@ from phone_field import PhoneField
 from accounts.constants import *
 from utils.Singleton import Singleton
 from utils.helper_funcs import ListAdapter
+from utils.sortable_catalogue import SortableCatalogue
 
 
 class User(AbstractUser):
