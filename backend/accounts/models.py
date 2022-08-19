@@ -1,8 +1,8 @@
 from typing import List
 
+from django.db.models import Q, When, Case, F
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
@@ -261,6 +261,9 @@ class UserCatalogue(metaclass=Singleton):
     def users(self):
         return User.objects.all()
 
+    VALID_SORT_FIELDS = ['score', 'first_name', 'last_name',
+                         'phone', 'username', 'email', 'role',  'date_joined']
+
     def search(self, query):
         result = self.users
         print("QUERY", query)
@@ -279,8 +282,9 @@ class UserCatalogue(metaclass=Singleton):
 
         if query.get('name'):
             result = result.filter(
-                    Q(**{'first_name__icontains': query['name']}) |
-                     Q(**{'last_name__icontains': query['name']}))
+                Q(**{'first_name__icontains': query['name']}) |
+                Q(**{'last_name__icontains': query['name']}) |
+                Q(**{'username__icontains': query['name']}))
 
         # filter User objects that exist in Customer Table
         if query.get('roles'):
@@ -291,13 +295,32 @@ class UserCatalogue(metaclass=Singleton):
             if query['role'] == User.UserRole.Specialist:
                 for field in ['speciality']:
                     if query.get(field):
-                        speciality_ids = list(map(int, query[field].split(',')))
+                        speciality_ids = ListAdapter(
+                        ).python_ensure_list(query[field])
                         result = result.filter(
                             Q(**{'normal_user_user__specialist_normal_user__' + field + '__in': speciality_ids}))
         if query.get('specialist_id'):
             result = result.filter(
                 Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
 
-        print(result)
+        if query.get('sort'):
+            result = result.annotate(
+                score=Case(
+                    When(role__in=[
+                        User.UserRole.Customer, User.UserRole.Specialist], then='normal_user_user__score'),
+                    When(role__in=[User.UserRole.CompanyManager,
+                                   User.UserRole.TechnicalManager], then=None),
+                )
+            )
+
+            raw_sort_fields: List[str] = query['sort'].split(',')
+            sort_filters = []
+            for field in raw_sort_fields:
+                if field in self.VALID_SORT_FIELDS:
+                    sort_filters.append(F(field).asc(nulls_last=True))
+                elif field.startswith('-') and field[1:] in self.VALID_SORT_FIELDS:
+                    sort_filters.append(F(field[1:]).desc(nulls_last=True))
+
+            result = result.order_by(*sort_filters)
 
         return result
