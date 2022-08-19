@@ -153,6 +153,10 @@ class RequestEditView(APIView):
             }, status=HTTP_400_BAD_REQUEST)
 
         request_entity = request_entity.first()
+        print(request_entity.id)
+        print(request_entity.customer.id)
+        print(request_entity.customer.normal_user.user.id)
+        print(request.user.id)
         if request.user.get_role() == User.UserRole.Customer:
             if request_entity.customer.normal_user.user.id != request.user.id:
                 return Response({
@@ -173,7 +177,8 @@ class RequestEditView(APIView):
                     query={'speciality': requested_speciality, 'customer': {'id': request.user.id}})
                 _request = _request \
                     .exclude(status__exact=Request.RequestStatus.DONE) \
-                    .exclude(status__exact=Request.RequestStatus.CANCELED)
+                    .exclude(status__exact=Request.RequestStatus.CANCELED) \
+                    .exclude(pk=request_id)
                 if _request.exists():  # this is only checked for customer. Manager can create duplicate request.
                     return Response({
                         'error': _(YOU_ALREADY_REQUESTED_THIS_SPECIALTY_ERROR)
