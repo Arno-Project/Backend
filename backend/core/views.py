@@ -61,7 +61,7 @@ class RequestSearchView(generics.GenericAPIView):
         if request.user.get_role() == User.UserRole.Specialist:
             query['speciality'] = {}
             if request.user.full_user.get_speciality():
-                query['speciality']['id'] = map(lambda x: x.id, request.user.full_user.get_speciality())
+                query['speciality']['id'] = list(map(lambda x: x.id, request.user.full_user.get_speciality()))
             else:
                 query['speciality']['id'] = []
         requests = RequestCatalogue().search(query)

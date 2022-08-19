@@ -306,7 +306,7 @@ class SpecialityAddRemoveView(APIView):
     def add_remove_speciality(self, request, is_add, *args, **kwargs):
         print(request.data)
         speciality_id = request.data.get('speciality_id')
-        if 'specialist_id' not in request.POST:
+        if 'specialist_id' not in request.data:
             if request.user.get_role() == User.UserRole.Specialist:
                 specialist_id = request.user.id
             else:
