@@ -213,7 +213,7 @@ class SystemFeedbackCatalogue(metaclass=Singleton):
                 result = result.filter(Q(**{field + '__iexact': query[field]}))
         for field in ['-type', '-status']:
             if query.get(field):
-                result = result.exclude(Q(**{field + '__iexact': query[field]}))
+                result = result.exclude(Q(**{field[1:] + '__iexact': query[field]}))
         for field in ['user']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__iexact': query[field]}))

@@ -32,7 +32,7 @@ class SystemFeedbackCreationSerializer(serializers.ModelSerializer):
 
 class SystemFeedbackSerializer(serializers.ModelSerializer):
     reply = SystemFeedbackReplySerializer()
-    user = serializers.NormalUserSerializer()
+    user = serializers.NormalUserFullSerializer()
 
     class Meta:
         model = SystemFeedback
