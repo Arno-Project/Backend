@@ -21,11 +21,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from core.views import FileUploadView
+from accounts.views import DocumentUploadView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('upload/',FileUploadView.as_view(),name="upload"),
+
     url(r'^api/account/', include('accounts.urls')),
     url(r'^api/core/', include('core.urls')),
     url(r'^api/feedback/', include('feedback.urls')), 

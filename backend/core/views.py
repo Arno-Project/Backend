@@ -1,21 +1,19 @@
 import datetime
 import json
-import uuid
 from abc import ABC
 
 from django.http import JsonResponse
 from django.utils.translation import gettext_lazy as _
 from knox.auth import TokenAuthentication
 from rest_framework import generics
-from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_201_CREATED
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from rest_framework.views import APIView
 
 from accounts.models import User, UserCatalogue, SpecialityCatalogue, Specialist
 from accounts.serializers import SpecialitySerializer
-from arno.settings import MEDIA_ROOT, USE_SCORE_LIMIT
+from arno.settings import USE_SCORE_LIMIT
 from core.constants import *
 from core.models import Request, Location, RequestCatalogue
 from core.serializers import RequestSerializer, LocationSerializer, RequestSubmitSerializer
@@ -26,26 +24,6 @@ from notification.notifications import RequestInitialAcceptBySpecialistNotificat
     SelectSpecialistForRequestNotification, RequestAcceptanceFinalizeBySpecialistNotification, \
     RequestRejectFinalizeBySpecialistNotification
 from utils.permissions import PermissionFactory
-
-
-class FileUploadView(APIView):
-    parser_classes = (MultiPartParser,)
-
-    @Logger().log_name()
-    def post(self, request, format=''):
-        up_file = request.FILES['file']
-
-        # up file name without extension
-        file_name = up_file.name.split('.')[0]
-        extension = up_file.name.split('.')[1]
-        full_name = file_name + '-' + str(uuid.uuid4()) + '.' + extension
-        request.user.full_user.document = up_file
-        print("hello")
-        with open(MEDIA_ROOT + "/" + full_name, 'wb+') as destination:
-            for chunk in up_file.chunks():
-                destination.write(chunk)
-
-        return Response(up_file.name, HTTP_201_CREATED)
 
 
 class RequestSearchView(generics.GenericAPIView):

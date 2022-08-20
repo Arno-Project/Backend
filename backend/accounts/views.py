@@ -1,22 +1,28 @@
 import json
+import uuid
 from abc import ABC
 from typing import Type
 
 from django.contrib.auth import login
+from django.core.files.base import ContentFile
 from django.http import JsonResponse, HttpResponse
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView, LogoutView as KnoxLogoutView
+from rest_condition import Or, And
 from rest_framework import generics, permissions, status
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.exceptions import APIException
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED
 from rest_framework.views import APIView
 
 from accounts.constants import *
+from arno.settings import MEDIA_ROOT
 from log.models import Logger
-from utils.permissions import PermissionFactory
+from utils.permissions import PermissionFactory, IsReadyOnlyRequest, IsPostRequest
 from .models import User, UserCatalogue, Speciality, Specialist, NormalUser, CompanyManager, ManagerUser, \
     TechnicalManager, Customer, SpecialityCatalogue
 from .serializers import CompanyManagerSerializer, CustomerSerializer, \
@@ -354,3 +360,46 @@ class ConfirmSpecialistView(APIView):
 
         request.user.general_user.confirm_specialist(specialist)
         return HttpResponse('OK', status=status.HTTP_200_OK)
+
+
+class DocumentUploadView(APIView):
+    # TODO add to class diagram
+    parser_classes = (MultiPartParser,)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [
+        Or(
+            And(IsReadyOnlyRequest, PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()),
+            And(IsReadyOnlyRequest, PermissionFactory(User.UserRole.CompanyManager).get_permission_class()),
+            PermissionFactory(User.UserRole.Specialist).get_permission_class())
+    ]
+
+    @Logger().log_name()
+    def post(self, request, format=''):
+        up_file = request.FILES['file']
+
+        # up file name without extension
+        file_name = up_file.name.split('.')[0]
+        extension = up_file.name.split('.')[1]
+        full_name = file_name + '-' + str(uuid.uuid4()) + '.' + extension
+        with open(MEDIA_ROOT + "/" + full_name, 'wb+') as destination:
+            for chunk in up_file.chunks():
+                destination.write(chunk)
+        spec = request.user.full_user
+        with open(MEDIA_ROOT + "/" + full_name, 'rb') as fh:
+            with ContentFile(fh.read()) as file_content:
+                spec.documents.save(full_name, file_content)
+                spec.save()
+
+        return Response(up_file.name, HTTP_201_CREATED)
+
+    @Logger().log_name()
+    def get(self, request):
+        specialist_id = request.query_params.get('id') if request.user.get_role() != User.UserRole.Specialist \
+            else request.user.id
+        try:
+            specialist = User.objects.get(pk=specialist_id).full_user
+        except User.DoesNotExist:
+            return JsonResponse({'error': SPECIALIST_NOT_FOUND_ERROR}, status=status.HTTP_400_BAD_REQUEST)
+        doc : str = specialist.documents.path
+        index = doc.find('/media')
+        return JsonResponse({'document': doc[index:]}, status=status.HTTP_200_OK)
