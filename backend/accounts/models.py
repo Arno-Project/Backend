@@ -286,23 +286,28 @@ class UserCatalogue(metaclass=Singleton):
                 Q(**{'last_name__icontains': query['name']}) |
                 Q(**{'username__icontains': query['name']}))
 
-        # filter User objects that exist in Customer Table
-        if query.get('roles'):
-            roles = query['roles'].split(',')
-            result = result.filter(Q(role__in=roles))
         if query.get('role'):
             print(query.get('role'))
             result = result.filter(Q(role__icontains=query['role']))
-            if query['role'] == User.UserRole.Specialist:
-                for field in ['speciality']:
-                    if query.get(field):
-                        speciality_ids = ListAdapter(
-                        ).python_ensure_list(query[field])
-                        result = result.filter(
-                            Q(**{'normal_user_user__specialist_normal_user__' + field + '__in': speciality_ids}))
+        elif query.get('roles'):
+            roles = query['roles'].split(',')
+            result = result.filter(Q(role__in=roles))
+        
         if query.get('specialist_id'):
             result = result.filter(
                 Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
+
+        if query.get('speciality'):
+            print("result", result)
+            specialists_result = result.filter(Q(role=User.UserRole.Specialist))
+            other_roles_result = result.exclude(Q(role=User.UserRole.Specialist))
+            speciality_ids = ListAdapter().python_ensure_list(query['speciality'])
+            specialists_result = specialists_result.filter(
+                Q(**{'normal_user_user__specialist_normal_user__speciality__in': speciality_ids}))
+
+            print("SP",specialists_result)
+            print("OTHHTHTHT", other_roles_result)
+            result = specialists_result | other_roles_result
 
         if query.get('requester_type'):
             if query.get('requester_type') == User.UserRole.Customer:
