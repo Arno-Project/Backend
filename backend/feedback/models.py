@@ -158,6 +158,8 @@ class SystemFeedbackReply(models.Model):
 class SystemFeedback(models.Model):
     class SystemFeedbackType(models.TextChoices):
         Technical = 'T', _('Technical')
+        Complaint = 'C', _('Complaint')
+        Suggestion = 'S', _('Suggestion')
         Other = 'O', _('Other')
 
     class SystemFeedbackStatus(models.TextChoices):
@@ -209,6 +211,9 @@ class SystemFeedbackCatalogue(metaclass=Singleton):
         for field in ['type', 'status']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__iexact': query[field]}))
+        for field in ['-type', '-status']:
+            if query.get(field):
+                result = result.exclude(Q(**{field + '__iexact': query[field]}))
         for field in ['user']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__iexact': query[field]}))
