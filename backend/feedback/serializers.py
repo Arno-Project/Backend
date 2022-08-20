@@ -23,9 +23,16 @@ class SystemFeedbackReplySerializer(serializers.ModelSerializer):
         }
 
 
+class SystemFeedbackCreationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = SystemFeedback
+        fields = ('text', 'type', 'status', 'user')
+
+
 class SystemFeedbackSerializer(serializers.ModelSerializer):
     reply = SystemFeedbackReplySerializer()
-    user = serializers.NormalUserSerializer()
+    user = serializers.NormalUserFullSerializer()
 
     class Meta:
         model = SystemFeedback

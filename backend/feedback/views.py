@@ -3,7 +3,7 @@ import json
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_condition import And, Or, Not
-from .serializers import MetricScoreSerializer, ScorePolicySerializer
+from .serializers import MetricScoreSerializer, ScorePolicySerializer, SystemFeedbackCreationSerializer
 from .models import EvaluationMetric, MetricScore, ScoreCalculator, ScorePolicy
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -112,7 +112,7 @@ class SubmitSystemFeedbackView(APIView):
             'text': request.data['text'],
             'type': request.data.get('type', "O")
         }
-        serializer = SystemFeedbackSerializer(data=data)
+        serializer = SystemFeedbackCreationSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return JsonResponse(serializer.data)
@@ -157,12 +157,15 @@ class SubmitSystemFeedbackReplyView(APIView):
 class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [Or(PermissionFactory(User.UserRole.Specialist).get_permission_class(),
-                             PermissionFactory(User.UserRole.Customer).get_permission_class(),
+                             PermissionFactory(
+                                 User.UserRole.Customer).get_permission_class(),
                              And(IsReadyOnlyRequest,
-                                 PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()
+                                 PermissionFactory(
+                                     User.UserRole.TechnicalManager).get_permission_class()
                                  ),
                              And(IsReadyOnlyRequest,
-                                 PermissionFactory(User.UserRole.CompanyManager).get_permission_class()
+                                 PermissionFactory(
+                                     User.UserRole.CompanyManager).get_permission_class()
                                  )
                              )]
 
@@ -244,9 +247,11 @@ class FeedbackView(APIView):
         serializer.is_valid(raise_exception=True)
         feedback = serializer.save()
         if request.user.get_role() == User.UserRole.Specialist:
-            ScoreCalculator(feedback.request.customer.normal_user).update_score()
+            ScoreCalculator(
+                feedback.request.customer.normal_user).update_score()
         else:
-            ScoreCalculator(feedback.request.specialist.normal_user).update_score()
+            ScoreCalculator(
+                feedback.request.specialist.normal_user).update_score()
 
         return JsonResponse(serializer.data)
 
@@ -273,7 +278,8 @@ class ScorePolicyView(APIView):
     # TODO Class diagram
     authentication_classes = [TokenAuthentication]
     permission_classes = [Or(PermissionFactory(User.UserRole.TechnicalManager).get_permission_class(),
-                             PermissionFactory(User.UserRole.CompanyManager).get_permission_class(),
+                             PermissionFactory(
+                                 User.UserRole.CompanyManager).get_permission_class(),
                              And(IsReadyOnlyRequest,
                                  PermissionFactory(User.UserRole.Specialist).get_permission_class()))
                           ]
