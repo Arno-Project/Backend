@@ -292,20 +292,23 @@ class UserCatalogue(metaclass=Singleton):
         elif query.get('roles'):
             roles = query['roles'].split(',')
             result = result.filter(Q(role__in=roles))
-        
+
         if query.get('specialist_id'):
             result = result.filter(
                 Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
 
         if query.get('speciality'):
             print("result", result)
-            specialists_result = result.filter(Q(role=User.UserRole.Specialist))
-            other_roles_result = result.exclude(Q(role=User.UserRole.Specialist))
-            speciality_ids = ListAdapter().python_ensure_list(query['speciality'])
+            specialists_result = result.filter(
+                Q(role=User.UserRole.Specialist))
+            other_roles_result = result.exclude(
+                Q(role=User.UserRole.Specialist))
+            speciality_ids = ListAdapter().python_ensure_list(
+                query['speciality'])
             specialists_result = specialists_result.filter(
                 Q(**{'normal_user_user__specialist_normal_user__speciality__in': speciality_ids}))
 
-            print("SP",specialists_result)
+            print("SP", specialists_result)
             print("OTHHTHTHT", other_roles_result)
             result = specialists_result | other_roles_result
 
@@ -333,5 +336,15 @@ class UserCatalogue(metaclass=Singleton):
                     sort_filters.append(F(field[1:]).desc(nulls_last=True))
 
             result = result.order_by(*sort_filters)
+        else:
+            result = result.annotate(
+                role_number=Case(
+                    When(role= User.UserRole.Customer, then=1),
+                    When(role= User.UserRole.Specialist, then=2),
+                    When(role= User.UserRole.TechnicalManager, then=3),
+                    When(role= User.UserRole.CompanyManager, then=4),
+                )
+            )
+            result = result.order_by('role_number', '-id')
 
         return result
