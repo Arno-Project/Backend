@@ -32,6 +32,9 @@ class RequestSearchView(generics.GenericAPIView):
 
     @Logger().log_name()
     def get(self, request):
+        if request.user.get_role == User.UserRole.Specialist:
+            if not request.user.full_user.is_validated:
+                return JsonResponse([],safe=False)
         query = json.loads(request.GET.get('q'))
         if request.user.get_role() == User.UserRole.Customer:
             query['customer'] = {}
