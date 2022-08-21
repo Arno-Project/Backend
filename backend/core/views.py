@@ -312,8 +312,8 @@ class RequestInitialAcceptBySpecialistView(APIView):
         if USE_SCORE_LIMIT:
             on_going_request_count = RequestCatalogue().search(query={'specialist': {'id': user.full_user.id}}).exclude(
                 status__exact=Request.RequestStatus.DONE).exclude(status__exact=Request.RequestStatus.CANCELED).count()
-            ScoreCalculator(request.user.general_user).update_score()
-            if on_going_request_count >= ScorePolicyChecker(request.user.general_user.score).get_allowed_request():
+            ScoreCalculator(user.general_user).update_score()
+            if on_going_request_count >= ScorePolicyChecker(user.general_user.score).get_allowed_request():
                 return Response({
                     'error': _(REQUEST_LIMIT_REACHED_ERROR)
                 }, status=HTTP_400_BAD_REQUEST)
