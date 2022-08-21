@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from abc import ABC
 from typing import Type
@@ -370,14 +371,20 @@ class DocumentUploadView(APIView):
             PermissionFactory(User.UserRole.Specialist).get_permission_class())
     ]
 
+    def check_for_media_dir(self):
+        if not os.path.isdir(MEDIA_ROOT):
+            os.makedirs(MEDIA_ROOT)
+
     @Logger().log_name()
     def post(self, request, format=''):
         up_file = request.FILES['file']
 
         # up file name without extension
-        file_name = up_file.name.split('.')[0]
-        extension = up_file.name.split('.')[1]
+        file_name = up_file.name[:up_file.name.rfind('.')]
+        extension = up_file.name[up_file.name.rfind('.') + 1:]
         full_name = file_name + '-' + str(uuid.uuid4()) + '.' + extension
+        
+        self.check_for_media_dir()
         with open(MEDIA_ROOT + "/" + full_name, 'wb+') as destination:
             for chunk in up_file.chunks():
                 destination.write(chunk)
