@@ -200,6 +200,9 @@ class SystemFeedback(models.Model):
     def get_reply(self):
         return self.reply
 
+    class Meta:
+        ordering = ['-created_at']
+
 
 class SystemFeedbackCatalogue(metaclass=Singleton):
     @property
@@ -213,7 +216,8 @@ class SystemFeedbackCatalogue(metaclass=Singleton):
                 result = result.filter(Q(**{field + '__iexact': query[field]}))
         for field in ['-type', '-status']:
             if query.get(field):
-                result = result.exclude(Q(**{field[1:] + '__iexact': query[field]}))
+                result = result.exclude(
+                    Q(**{field[1:] + '__iexact': query[field]}))
         for field in ['user']:
             if query.get(field):
                 result = result.filter(Q(**{field + '__iexact': query[field]}))
@@ -249,9 +253,11 @@ class ScoreCalculator:
     def update_score(self):
         print("UPDATE SCORE")
         if self.normal_user.user.get_role() == accounts.models.User.UserRole.Customer:
-            requests = Request.objects.filter(customer__id=self.normal_user.user.full_user.id)
+            requests = Request.objects.filter(
+                customer__id=self.normal_user.user.full_user.id)
         elif self.normal_user.user.get_role() == accounts.models.User.UserRole.Specialist:
-            requests = Request.objects.filter(specialist__id=self.normal_user.user.full_user.id)
+            requests = Request.objects.filter(
+                specialist__id=self.normal_user.user.full_user.id)
         else:
             raise Exception()
 
@@ -267,7 +273,7 @@ class ScoreCalculator:
             for metric_score in feedback.metric_scores.all():
                 sum += metric_score.score
                 counter += 1
-        
+
         if counter == 0:
             self.normal_user.set_score(5)
         else:

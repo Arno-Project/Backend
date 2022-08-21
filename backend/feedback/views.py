@@ -120,7 +120,8 @@ class SubmitSystemFeedbackView(APIView):
 
 class SearchSystemFeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
+                          PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
 
     @Logger().log_name()
     def get(self, request):
@@ -129,6 +130,23 @@ class SearchSystemFeedbackView(APIView):
             json.loads(request.GET.get('q')))
         serialized = SystemFeedbackSerializer(system_feedback, many=True)
         return JsonResponse(serialized.data, safe=False)
+
+    @Logger().log_name()
+    def post(self, request):
+        ids = request.data.get('ids')
+        id_list = ListAdapter().python_ensure_list(ids)
+        objs = []
+        for id in id_list:
+            try:
+                feedback :SystemFeedback= SystemFeedback.objects.get(pk=id)
+            except:
+                continue
+            if not feedback:
+                continue
+            feedback.set_status(SystemFeedback.SystemFeedbackStatus.Viewed)
+            objs.append(feedback)
+        SystemFeedback.objects.bulk_update(objs, ['status'])
+        return Response({'ids': map(lambda x: x.id, objs)})
 
 
 class SubmitSystemFeedbackReplyView(APIView):
