@@ -86,7 +86,8 @@ class NormalRegisterView(RegisterView):
 
 class ManagerRegisterView(RegisterView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
+    permission_classes = [PermissionFactory(
+        User.UserRole.CompanyManager).get_permission_class()]
 
     def __init__(self):
         super(ManagerRegisterView, self).__init__(CompanyManagerFullSerializer, TechnicalManagerFullSerializer,
@@ -137,7 +138,8 @@ class MyAccountView(APIView):
     def get(self, request):
         return JsonResponse({
             'user': UserFullSerializer(request.user).data,
-            'role': request.user.get_role()
+            'role': request.user.get_role(),
+            'is_validated': request.user.role != User.UserRole.Specialist or request.user.normal_user_user.specialist_normal_user.get_is_validated()
         })
 
 
@@ -190,7 +192,7 @@ class AccountsView(APIView):
         SpecialistFullSerializer | SpecialistSerializer |
         CompanyManagerFullSerializer | CompanyManagerSerializer |
         TechnicalManagerFullSerializer | TechnicalManagerSerializer
-        ]:
+    ]:
         if user.get_role() == User.UserRole.Customer:
             return CustomerFullSerializer if manager else CustomerSerializer
         elif user.get_role() == User.UserRole.Specialist:
@@ -207,7 +209,8 @@ class AccountsView(APIView):
         query_dict_ = {**query_dict, 'requester_type': request.user.get_role()}
         users = UserCatalogue().search(query_dict_)
 
-        serialized = [self.get_serializer_class(user, manager)(user.full_user).data for user in users]
+        serialized = [self.get_serializer_class(user, manager)(
+            user.full_user).data for user in users]
         return JsonResponse({'users': serialized}, safe=False)
 
 
@@ -220,7 +223,8 @@ class SpecialityView(APIView):
             permission_classes = [
                 PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
                 PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
-                PermissionFactory(User.UserRole.Specialist).get_permission_class()
+                PermissionFactory(
+                    User.UserRole.Specialist).get_permission_class()
             ]
         return [permission() for permission in permission_classes]
 
@@ -238,11 +242,13 @@ class SpecialityView(APIView):
 
     @Logger().log_name()
     def post(self, request, *args, **kwargs):
-        speciality = SpecialityCatalogue().search(query={'title': request.data.get('title')})
+        speciality = SpecialityCatalogue().search(
+            query={'title': request.data.get('title')})
         if speciality.exists() and speciality.first().get_title() == request.data.get('title'):
             return JsonResponse({'error': SPECIALITY_EXISTS_ERROR}, status=status.HTTP_400_BAD_REQUEST)
         if request.data.get('parent', None):
-            speciality = SpecialityCatalogue().search(query={'id': request.data.get('parent')})
+            speciality = SpecialityCatalogue().search(
+                query={'id': request.data.get('parent')})
             if speciality.exists():
                 request.data['parent'] = speciality.first().id
                 if speciality.first().parent is not None:
@@ -280,7 +286,8 @@ class SpecialtyCategorizeView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [
         PermissionFactory(User.UserRole.CompanyManager).get_permission_class() |
-        PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()
+        PermissionFactory(
+            User.UserRole.TechnicalManager).get_permission_class()
     ]
 
     def post(self, request, *args, **kwargs):
@@ -351,7 +358,8 @@ class ConfirmSpecialistView(APIView):
     def post(self, request, *args, **kwargs):
         specialist_id = request.data.get('specialist_id')
         try:
-            specialist = UserCatalogue().search(query={'id': specialist_id, 'role': "S"})[0].full_user
+            specialist = UserCatalogue().search(
+                query={'id': specialist_id, 'role': "S"})[0].full_user
         except IndexError:
             return JsonResponse({'error': SPECIALIST_NOT_FOUND_ERROR}, status=status.HTTP_400_BAD_REQUEST)
         if specialist.get_is_validated():
@@ -366,8 +374,10 @@ class DocumentUploadView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [
         Or(
-            And(IsReadyOnlyRequest, PermissionFactory(User.UserRole.TechnicalManager).get_permission_class()),
-            And(IsReadyOnlyRequest, PermissionFactory(User.UserRole.CompanyManager).get_permission_class()),
+            And(IsReadyOnlyRequest, PermissionFactory(
+                User.UserRole.TechnicalManager).get_permission_class()),
+            And(IsReadyOnlyRequest, PermissionFactory(
+                User.UserRole.CompanyManager).get_permission_class()),
             PermissionFactory(User.UserRole.Specialist).get_permission_class())
     ]
 
@@ -383,7 +393,7 @@ class DocumentUploadView(APIView):
         file_name = up_file.name[:up_file.name.rfind('.')]
         extension = up_file.name[up_file.name.rfind('.') + 1:]
         full_name = file_name + '-' + str(uuid.uuid4()) + '.' + extension
-        
+
         self.check_for_media_dir()
         with open(MEDIA_ROOT + "/" + full_name, 'wb+') as destination:
             for chunk in up_file.chunks():
@@ -404,6 +414,6 @@ class DocumentUploadView(APIView):
             specialist = User.objects.get(pk=specialist_id).full_user
         except User.DoesNotExist:
             return JsonResponse({'error': SPECIALIST_NOT_FOUND_ERROR}, status=status.HTTP_400_BAD_REQUEST)
-        doc : str = specialist.documents.path
+        doc: str = specialist.documents.path
         index = doc.find('/media')
         return JsonResponse({'document': doc[index:]}, status=status.HTTP_200_OK)
