@@ -36,7 +36,6 @@ class PermissionFactory():
         return Permission
 
 
-# TODO add to class diagram
 class IsReadyOnlyRequest(permissions.BasePermission):
 
     def has_permission(self, request, view):
@@ -48,14 +47,3 @@ class IsPostRequest(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.method == "POST"
 
-
-class IsPutRequest(permissions.BasePermission):
-
-    def has_permission(self, request, view):
-        return request.method == "PUT"
-
-
-class IsDeleteRequest(permissions.BasePermission):
-
-    def has_permission(self, request, view):
-        return request.method == "DELETE"

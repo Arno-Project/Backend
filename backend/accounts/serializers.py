@@ -83,7 +83,7 @@ class CustomerFullSerializer(FlattenMixin, ModelSerializer):
         flatten = [('normal_user', NormalUserFullSerializer)]
 
 
-# TODO add to class diagram
+
 
 class SpecialityBasicSerializer(ModelSerializer):
     class Meta:

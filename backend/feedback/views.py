@@ -257,7 +257,6 @@ class FeedbackView(APIView):
 
 
 class ForceUpdateScoresView(APIView):
-    # TODO Class diagram
     authentication_classes = [TokenAuthentication]
     permission_classes = [PermissionFactory(User.UserRole.TechnicalManager).get_permission_class() |
                           PermissionFactory(User.UserRole.CompanyManager).get_permission_class()]
@@ -275,7 +274,6 @@ class ForceUpdateScoresView(APIView):
 
 
 class ScorePolicyView(APIView):
-    # TODO Class diagram
     authentication_classes = [TokenAuthentication]
     permission_classes = [Or(PermissionFactory(User.UserRole.TechnicalManager).get_permission_class(),
                              PermissionFactory(

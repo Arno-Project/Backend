@@ -262,7 +262,6 @@ class SpecialityView(APIView):
 
 
 class SpecialitySearchView(APIView):
-    # TODO add to class diagram
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -276,7 +275,6 @@ class SpecialitySearchView(APIView):
 
 
 class SpecialtyCategorizeView(APIView):
-    # TODO add to class diagram
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [
@@ -363,7 +361,6 @@ class ConfirmSpecialistView(APIView):
 
 
 class DocumentUploadView(APIView):
-    # TODO add to class diagram
     parser_classes = (MultiPartParser,)
     authentication_classes = [TokenAuthentication]
     permission_classes = [

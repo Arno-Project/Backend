@@ -225,7 +225,6 @@ class SystemFeedbackCatalogue(metaclass=Singleton):
 
 
 class ScorePolicy(models.Model):
-    # TODO Class diagram
     minimum_score = models.FloatField(null=False, blank=False)
     allowed_requests = models.IntegerField(null=False, blank=False)
 
@@ -242,8 +241,7 @@ class ScorePolicy(models.Model):
         self.allowed_requests = allowed_requests
 
 
-class ScoreCalculator():
-    # TODO Class diagram
+class ScoreCalculator:
 
     def __init__(self, normal_user: NormalUser):
         self.normal_user = normal_user
@@ -277,8 +275,7 @@ class ScoreCalculator():
         self.normal_user.save()
 
 
-class ScorePolicyChecker():
-    # TODO Class diagram
+class ScorePolicyChecker:
 
     def __init__(self, score):
         self.score = score
