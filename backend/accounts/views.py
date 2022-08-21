@@ -375,8 +375,8 @@ class DocumentUploadView(APIView):
         up_file = request.FILES['file']
 
         # up file name without extension
-        file_name = up_file.name.split('.')[0]
-        extension = up_file.name.split('.')[1]
+        file_name = up_file.name[:up_file.name.rfind('.')]
+        extension = up_file.name[up_file.name.rfind('.') + 1:]
         full_name = file_name + '-' + str(uuid.uuid4()) + '.' + extension
         with open(MEDIA_ROOT + "/" + full_name, 'wb+') as destination:
             for chunk in up_file.chunks():
