@@ -3,7 +3,7 @@ import json
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_condition import And, Or, Not
-from .serializers import MetricScoreSerializer, ScorePolicySerializer, SystemFeedbackCreationSerializer
+from .serializers import MetricScoreSerializer, ScorePolicySerializer, SystemFeedbackCreationSerializer, SystemFeedbackReplySerializer
 from .models import EvaluationMetric, MetricScore, ScoreCalculator, ScorePolicy
 from knox.auth import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from accounts.models import User, NormalUser
 from core.models import RequestCatalogue
 from feedback.models import SystemFeedbackCatalogue, SystemFeedback, EvaluationMetricCatalogue, FeedbackCatalogue
-from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReplySerializer, EvaluationMetricSerializer, \
+from feedback.serializers import SystemFeedbackSerializer, SystemFeedbackReadonlyReplySerializer, EvaluationMetricSerializer, \
     FeedbackSerializer, FeedbackReadOnlySerializer
 from log.models import Logger
 from utils.helper_funcs import ListAdapter
