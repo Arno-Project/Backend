@@ -195,10 +195,12 @@ class RequestCatalogue(metaclass=Singleton):
             result = result.filter(specialist__normal_user__user__in=users)
 
         if query.get('speciality'):
+
             try:
                 speciality_query = query.get('speciality')['id']
             except:
                 speciality_query = query.get('speciality')
+
             result = result.filter(requested_speciality__in=ListAdapter().python_ensure_list(speciality_query))
 
         if query.get('location'):
