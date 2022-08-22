@@ -132,28 +132,17 @@ class FeedbackCatalogue(metaclass=Singleton):
     def feedbacks(self):
         return Feedback.objects.all()
 
-    def get_feedback_list(self):
-        return self.feedbacks
-
-    def search_by_request(self, request_id, user_id) -> Feedback:
-        return self.feedbacks.filter(request__id=request_id, user__user__id=user_id)
-
-    def search_after_time(self, time):
-        pass
-
-    def sort_by_time(self, ascending=True):
-        pass
-
     def search(self, query):
         result = self.feedbacks
-        print("feedback " , query)
 
         if query.get('user'):
-
             result = result.filter(user__user__id=query['user'])
 
         if query.get('request'):
             result = result.filter(request__id=query['request'])
+
+        if query.get('after'):
+            result = result.filter(created_at__gte=query.get('after'))
 
         return result
 

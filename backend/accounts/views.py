@@ -429,8 +429,11 @@ class UserSatisfactionView(APIView):
 
     @Logger().log_name()
     def get(self, request):
-        role = request.GET.get('role', User.UserRole.Customer)
-        threshold = int(request.GET.get('threshold', 50))
+        query = json.loads(request.GET.get('q'))
+        role = query.get('role', User.UserRole.Customer)
+        threshold = query.get('threshold', 50)
+        after = query.get('after', None)
+        ordering = query.get('ordering', 'avg')
 
         if role not in [User.UserRole.Customer, User.UserRole.Specialist]:
             return JsonResponse({'error': INVALID_ROLE}, status=status.HTTP_400_BAD_REQUEST)
@@ -448,11 +451,16 @@ class UserSatisfactionView(APIView):
 
         result = []
         for i, user in enumerate(users):
-            user_feedbacks = FeedbackCatalogue().search({'user': user.id})
+            feedback_query = {'user': user.id}
+            if after:
+                feedback_query['after'] = after
+            user_feedbacks = FeedbackCatalogue().search(feedback_query)
 
             bad_feedbacks = []
             bad_metrics = set()
+            average_sum = 0
             for feedback in user_feedbacks:
+                average_sum += feedback.get_average_score()
                 if feedback.get_average_score() < threshold:
                     bad_feedbacks.append(feedback)
                 for metric_score in feedback.metric_scores.all():
@@ -461,10 +469,18 @@ class UserSatisfactionView(APIView):
 
             if len(bad_feedbacks) > 0 or len(bad_metrics) > 0:
                 result.append({'user': user_serialized_data[i],
-                            'total_feedbacks_count': user_feedbacks.count(),
-                            'bad_feedbacks': FeedbackReadOnlySerializer(bad_feedbacks, many=True).data,
-                            'bad_metrics': EvaluationMetricSerializer(list(bad_metrics), many=True).data})
+                               'total_feedbacks_count': user_feedbacks.count(),
+                               'bad_feedbacks': FeedbackReadOnlySerializer(bad_feedbacks, many=True).data,
+                               'bad_metrics': EvaluationMetricSerializer(list(bad_metrics), many=True).data,
+                               'average_score': average_sum / user_feedbacks.count()})
 
-        return JsonResponse({
-            'users': result
-        })
+        if ordering == 'bad_feedbacks':
+            result.sort(key=lambda a: -len(a['bad_feedbacks']))
+        elif ordering == 'total_feedbacks':
+            result.sort(key=lambda a: -a['total_feedbacks_count'])
+        elif ordering == 'ratio':
+            result.sort(key=lambda a: -len(a['bad_feedbacks'])/a['total_feedbacks_count'])
+        else:
+            result.sort(key=lambda a: a['average_score'])
+
+        return JsonResponse(result, safe=False)

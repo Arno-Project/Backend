@@ -193,8 +193,7 @@ class FeedbackView(APIView):
 
         if service_request_id:
             print("req id", service_request_id)
-            feedback = FeedbackCatalogue().search_by_request(
-                service_request_id, request.user.id)
+            feedback = FeedbackCatalogue().search({'request': service_request_id, 'user': request.user.id })
             if not feedback:
                 return JsonResponse({'error': FEEDBACK_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
 
@@ -202,7 +201,7 @@ class FeedbackView(APIView):
             serialized = FeedbackReadOnlySerializer(feedback, many=True)
             return JsonResponse(serialized.data, safe=False)
 
-        feedbacks = FeedbackCatalogue().get_feedback_list()
+        feedbacks = FeedbackCatalogue().search({})
         serialized = FeedbackReadOnlySerializer(feedbacks, many=True)
         return JsonResponse(serialized.data, safe=False)
 
@@ -224,7 +223,7 @@ class FeedbackView(APIView):
 
         service_request = RequestCatalogue().search(query)
 
-        old_feedbacks = FeedbackCatalogue().search_by_request(request_id, request.user.id)
+        old_feedbacks = FeedbackCatalogue().search({'request': request_id, 'user': request.user.id })
 
         if not service_request:
             return JsonResponse({'error': REQUEST_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
