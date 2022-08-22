@@ -138,7 +138,7 @@ class SearchSystemFeedbackView(APIView):
         objs = []
         for id in id_list:
             try:
-                feedback :SystemFeedback= SystemFeedback.objects.get(pk=id)
+                feedback: SystemFeedback = SystemFeedback.objects.get(pk=id)
             except:
                 continue
             if not feedback:
@@ -190,10 +190,12 @@ class FeedbackView(APIView):
     @Logger().log_name()
     def get(self, request):
         service_request_id = request.GET.get('request_id', None)
+        user_id = request.GET.get('user_id', request.user.id)
 
         if service_request_id:
             print("req id", service_request_id)
-            feedback = FeedbackCatalogue().search({'request': service_request_id, 'user': request.user.id })
+            feedback = FeedbackCatalogue().search(
+                {'request': service_request_id, 'user': user_id})
             if not feedback:
                 return JsonResponse({'error': FEEDBACK_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
 
@@ -223,7 +225,8 @@ class FeedbackView(APIView):
 
         service_request = RequestCatalogue().search(query)
 
-        old_feedbacks = FeedbackCatalogue().search({'request': request_id, 'user': request.user.id })
+        old_feedbacks = FeedbackCatalogue().search(
+            {'request': request_id, 'user': request.user.id})
 
         if not service_request:
             return JsonResponse({'error': REQUEST_NOT_FOUND_ERROR}, status=HTTP_404_NOT_FOUND)
