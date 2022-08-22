@@ -463,11 +463,11 @@ class UserSatisfactionView(APIView):
                 average_sum += feedback.get_average_score()
                 if feedback.get_average_score() < threshold:
                     bad_feedbacks.append(feedback)
-                for metric_score in feedback.metric_scores.all():
-                    if metric_score.score < threshold:
-                        bad_metrics.add(metric_score.metric)
+                    for metric_score in feedback.metric_scores.all():
+                        if metric_score.score < threshold:
+                            bad_metrics.add(metric_score.metric)
 
-            if len(bad_feedbacks) > 0 or len(bad_metrics) > 0:
+            if len(bad_feedbacks) > 0:
                 result.append({'user': user_serialized_data[i],
                                'total_feedbacks_count': user_feedbacks.count(),
                                'bad_feedbacks': FeedbackReadOnlySerializer(bad_feedbacks, many=True).data,
