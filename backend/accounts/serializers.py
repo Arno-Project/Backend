@@ -28,7 +28,7 @@ class FlattenMixin(object):
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'role')
+        fields = ('id', 'username', 'first_name', 'last_name', 'role', 'last_login', 'date_joined')
 
 
 class UserFullSerializer(ModelSerializer):
