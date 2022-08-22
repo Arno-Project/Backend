@@ -21,16 +21,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from core.views import FileUploadView
+from accounts.views import DocumentUploadView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('upload/',FileUploadView.as_view(),name="upload"),
+
     url(r'^api/account/', include('accounts.urls')),
     url(r'^api/core/', include('core.urls')),
     url(r'^api/feedback/', include('feedback.urls')), 
     url(r'^api/chats/', include('chat.urls')),
     url(r'^api/notification/', include('notification.urls')),
+    url(r'^api/log/', include('log.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

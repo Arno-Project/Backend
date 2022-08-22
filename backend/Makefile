@@ -1,5 +1,5 @@
 include .env
-
+.PHONY: build up down restart logs migrate makemigrations startapp superuser runserver down-v volume shell tests drop-table
 build:
 	docker-compose up --build -d
 up:

@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update \
-    && apt-get -y install netcat gcc postgresql \
+    && apt-get -y install netcat gcc postgresql iputils-ping net-tools \
     && apt-get clean
 
 RUN apt-get update \

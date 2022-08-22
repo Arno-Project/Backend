@@ -1,8 +1,8 @@
 from typing import List
 
+from django.db.models import Q, When, Case, F
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from phone_field import PhoneField
 
@@ -19,8 +19,10 @@ class User(AbstractUser):
         Specialist = 'S', _('Specialist')
 
     email = models.EmailField(unique=True)
-    phone = PhoneField(blank=False, null=False, verbose_name=PHONE_NUMBER_VERBOSE, unique=True)
-    role = models.CharField(max_length=2, choices=UserRole.choices, default=UserRole.Customer)
+    phone = PhoneField(blank=False, null=False,
+                       verbose_name=PHONE_NUMBER_VERBOSE, unique=True)
+    role = models.CharField(
+        max_length=2, choices=UserRole.choices, default=UserRole.Customer)
 
     @property
     def is_manager(self):
@@ -75,8 +77,9 @@ class User(AbstractUser):
 
 
 class NormalUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="normal_user_user")
-    score = models.IntegerField(default=0)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="normal_user_user")
+    score = models.FloatField(default=0)
 
     def __str__(self):
         return self.user.__str__()
@@ -99,7 +102,8 @@ class NormalUser(models.Model):
 
 
 class Customer(models.Model):
-    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='customer_normal_user')
+    normal_user = models.OneToOneField(
+        NormalUser, on_delete=models.CASCADE, related_name='customer_normal_user')
 
     def __str__(self):
         return self.normal_user.__str__()
@@ -112,6 +116,8 @@ class Customer(models.Model):
 class Speciality(models.Model):
     title = models.CharField(max_length=100, verbose_name=SPECIALITY_TITLE)
     description = models.TextField(verbose_name=SPECIALITY_DESCRIPTION)
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
 
     def get_title(self):
         return self.title
@@ -125,17 +131,46 @@ class Speciality(models.Model):
     def set_description(self, description):
         self.description = description
 
+    def get_children(self):
+        return Speciality.objects.filter(parent=self)
+
+    def get_parent(self):
+        return self.parent
+
+    def set_parent(self, parent):
+        self.parent = parent
+
 
 class SpecialityCatalogue(metaclass=Singleton):
-    specialities = Speciality.objects.all()
+    @property
+    def specialities(self):
+        return Speciality.objects.all()
 
     def search(self, query):
         result = self.specialities
         if query.get('id'):
-            result = result.filter(pk__in=ListAdapter().python_ensure_list(query.get('id')))
+            result = result.filter(
+                pk__in=ListAdapter().python_ensure_list(query.get('id')))
         for field in ['title', 'description']:
             if query.get(field):
-                result = result.filter(Q(**{field + '__icontains': query[field]}))
+                result = result.filter(
+                    Q(**{field + '__icontains': query[field]}))
+        if query.get('is_leaf', 0):
+            result = result.filter(parent__isnull=False)
+        if query.get('is_category', 0):
+            result = result.filter(parent__isnull=True)
+        if query.get('parent'):
+            parent_query = {
+                **query.get('parent'),
+            }
+            parent = SpecialityCatalogue().search(query=parent_query)
+            result = result.filter(parent__in=parent)
+        if query.get('children'):
+            children_query = {
+                **query.get('children'),
+            }
+            children = SpecialityCatalogue().search(query=children_query)
+            result = result.filter(children__in=children)
         return result
 
 
@@ -144,7 +179,8 @@ class Specialist(models.Model):
         verbose_name = SPECIALIST_VERBOSE_NAME
         verbose_name_plural = SPECIALIST_VERBOSE_NAME_PLURAL
 
-    normal_user = models.OneToOneField(NormalUser, on_delete=models.CASCADE, related_name='specialist_normal_user')
+    normal_user = models.OneToOneField(
+        NormalUser, on_delete=models.CASCADE, related_name='specialist_normal_user')
     speciality = models.ManyToManyField(Speciality, blank=True, null=True)
     documents = models.FileField(upload_to='documents/', blank=True, null=True)
     is_validated = models.BooleanField(default=False)
@@ -180,8 +216,10 @@ class Specialist(models.Model):
     def set_active(self, is_active: bool):
         self.is_active = is_active
 
+
 class ManagerUser(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="manager_user_user")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="manager_user_user")
 
     def confirm_specialist(self, specialist: Specialist):
         specialist.set_validated(True)
@@ -219,7 +257,12 @@ class TechnicalManager(models.Model):
 
 
 class UserCatalogue(metaclass=Singleton):
-    users = User.objects.all()
+    @property
+    def users(self):
+        return User.objects.all()
+
+    VALID_SORT_FIELDS = ['score', 'first_name', 'last_name',
+                         'phone', 'username', 'email', 'role', 'date_joined']
 
     def search(self, query):
         result = self.users
@@ -229,23 +272,79 @@ class UserCatalogue(metaclass=Singleton):
             return result
         for field in ['id']:
             if query.get(field):
-                result = result.filter(pk__in=ListAdapter().python_ensure_list(query[field]))
-        for field in ['first_name', 'last_name', 'phone']:
+                result = result.filter(
+                    pk__in=ListAdapter().python_ensure_list(query[field]))
+
+        for field in ['first_name', 'last_name', 'phone', 'username', 'email']:
             if query.get(field):
-                result = result.filter(Q(**{field + '__icontains': query[field]}))
-        if query.get('username'):
-            result = result.filter(Q(username__eq=query['username']))
-        # filter User objects that exist in Customer Table
+                result = result.filter(
+                    Q(**{field + '__icontains': query[field]}))
+
+        if query.get('name'):
+            result = result.filter(
+                Q(**{'first_name__icontains': query['name']}) |
+                Q(**{'last_name__icontains': query['name']}) |
+                Q(**{'username__icontains': query['name']}))
+
         if query.get('role'):
-            result = result.filter(Q(role__icontains=query['role']))
-            if query['role'] == User.UserRole.Specialist:
-                for field in ['speciality']:
-                    if query.get(field):
-                        result = result.filter(Q(**{'normal_user_user__specialist_normal_user__' + field + '__in': query[field]}))
+            print(query.get('role'))
+            result = result.filter(Q(role=query['role']))
+        elif query.get('roles'):
+            roles = query['roles'].split(',')
+            result = result.filter(Q(role__in=roles))
+
         if query.get('specialist_id'):
-            result = result.filter(Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
-            print(result)
+            result = result.filter(
+                Q(normal_user_user__specialist_normal_user__exact=query['specialist_id']))
+
+        if query.get('speciality'):
+            print("result", result)
+            specialists_result = result.filter(
+                Q(role=User.UserRole.Specialist))
+            other_roles_result = result.exclude(
+                Q(role=User.UserRole.Specialist))
+            speciality_ids = ListAdapter().python_ensure_list(
+                query['speciality'])
+            specialists_result = specialists_result.filter(
+                Q(**{'normal_user_user__specialist_normal_user__speciality__in': speciality_ids}))
+
+            print("SP", specialists_result)
+            print("OTHHTHTHT", other_roles_result)
+            result = specialists_result | other_roles_result
+
+        if query.get('requester_type'):
+            if query.get('requester_type') == User.UserRole.Customer:
+                result = result.exclude(Q(role__in=[User.UserRole.Specialist]) & Q(
+                    normal_user_user__specialist_normal_user__is_validated=False))
+
+        if query.get('sort'):
+            result = result.annotate(
+                score=Case(
+                    When(role__in=[
+                        User.UserRole.Customer, User.UserRole.Specialist], then='normal_user_user__score'),
+                    When(role__in=[User.UserRole.CompanyManager,
+                                   User.UserRole.TechnicalManager], then=None),
+                )
+            )
+
+            raw_sort_fields: List[str] = query['sort'].split(',')
+            sort_filters = []
+            for field in raw_sort_fields:
+                if field in self.VALID_SORT_FIELDS:
+                    sort_filters.append(F(field).asc(nulls_last=True))
+                elif field.startswith('-') and field[1:] in self.VALID_SORT_FIELDS:
+                    sort_filters.append(F(field[1:]).desc(nulls_last=True))
+
+            result = result.order_by(*sort_filters)
+        else:
+            result = result.annotate(
+                role_number=Case(
+                    When(role= User.UserRole.Customer, then=1),
+                    When(role= User.UserRole.Specialist, then=2),
+                    When(role= User.UserRole.TechnicalManager, then=3),
+                    When(role= User.UserRole.CompanyManager, then=4),
+                )
+            )
+            result = result.order_by('role_number', '-id')
 
         return result
-
-

@@ -1,10 +1,11 @@
-version: "3.5"
+version: "3.9"
 
 services:
    arno:
       build:
          context: .
          dockerfile: Dockerfile
+      # command: bash -c "python manage.py collectstatic  --noinput && gunicorn -c gunicorn.conf.py"
       command: python manage.py runserver 0.0.0.0:8000
       volumes:
          - .:/app
@@ -36,6 +37,7 @@ services:
 
 networks:
    core:
+      name: core
       driver: bridge
 
 volumes:

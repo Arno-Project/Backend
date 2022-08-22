@@ -46,6 +46,8 @@ SECRET_KEY = config("SECRET_KEY", default="S#perS3crEt_1122")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG")
 
+USE_SCORE_LIMIT = True
+
 AUTH_USER_MODEL = 'accounts.User'
 
 ALLOWED_HOSTS = [
@@ -53,6 +55,8 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     config("SERVER", default="127.0.0.1"),
     ".herokuapp.com",
+    "arno.mostafaojaghi.ir",
+    "37.32.24.54"
 
 ]
 
@@ -69,12 +73,14 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'feedback.apps.FeedbackConfig',
     'notification.apps.NotificationConfig',
+    'log.apps.LogConfig',
     'corsheaders',
     'chat',
     'rest_framework',
     'phone_field',
     'knox',
-    'django_extensions'
+    'django_extensions',
+    'rest_condition',
 ]
 
 MIDDLEWARE = [
@@ -203,7 +209,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_ROOT = os.path.join(CORE_DIR, "core/staticfiles")
+STATIC_ROOT = os.path.join(CORE_DIR, "arno/staticfiles")
 STATIC_URL = "/static/"
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory where uploaded media is saved.

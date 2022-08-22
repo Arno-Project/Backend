@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 from accounts.models import User, Customer, Specialist, TechnicalManager, CompanyManager, Speciality, NormalUser, \
@@ -27,13 +28,14 @@ class FlattenMixin(object):
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'role')
+        fields = ('id', 'username', 'first_name', 'last_name', 'role', 'last_login', 'date_joined')
 
 
 class UserFullSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'phone', 'first_name', 'last_name', 'date_joined', 'last_login', 'role')
+
 
 class NormalUserSerializer(ModelSerializer):
     user = UserSerializer()
@@ -78,13 +80,34 @@ class CustomerFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = Customer
         fields = ('id',)
-        flatten = [('normal_user', NormalUserSerializer)]
+        flatten = [('normal_user', NormalUserFullSerializer)]
+
+
+
+
+class SpecialityBasicSerializer(ModelSerializer):
+    class Meta:
+        model = Speciality
+        fields = ('id', 'title', 'description')
 
 
 class SpecialitySerializer(ModelSerializer):
+    parent = SpecialityBasicSerializer()
+
+    def get_fields(self):
+        fields = super(SpecialitySerializer, self).get_fields()
+        fields['children'] = SpecialitySerializer(many=True)
+        return fields
+
     class Meta:
         model = Speciality
-        fields = '__all__'
+        fields = ('id', 'title', 'description', 'parent', 'children')
+
+
+class SpecialityCreationSerializer(ModelSerializer):
+    class Meta:
+        model = Speciality
+        fields = ('id', 'title', 'description', 'parent')
 
 
 class SpecialistSerializer(FlattenMixin, ModelSerializer):
@@ -112,14 +135,14 @@ class CompanyManagerFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = CompanyManager
         fields = ('id',)
-        flatten = [('manager_user', ManagerUserSerializer)]
+        flatten = [('manager_user', ManagerUserFullSerializer)]
 
 
 class TechnicalManagerFullSerializer(FlattenMixin, ModelSerializer):
     class Meta:
         model = CompanyManager
         fields = ('id',)
-        flatten = [('manager_user', ManagerUserSerializer)]
+        flatten = [('manager_user', ManagerUserFullSerializer)]
 
 
 class TechnicalManagerSerializer(FlattenMixin, ModelSerializer):
@@ -138,10 +161,10 @@ class RegisterSerializerFactory:
         concrete_class = self.concrete_class
         middle_class = self.middle_class
         role_mapping = {
-            Customer: User.UserRole.Customer[0],
-            Specialist: User.UserRole.Specialist[0],
-            CompanyManager: User.UserRole.CompanyManager[0],
-            TechnicalManager: User.UserRole.TechnicalManager[0]
+            Customer: User.UserRole.Customer,
+            Specialist: User.UserRole.Specialist,
+            CompanyManager: User.UserRole.CompanyManager,
+            TechnicalManager: User.UserRole.TechnicalManager
         }
 
         class Serializer(ModelSerializer):
@@ -169,5 +192,3 @@ class RegisterSerializerFactory:
                 return concrete_user
 
         return Serializer
-
-

@@ -26,7 +26,7 @@ class PermissionFactory():
                 permitted = super().has_object_permission(request, view, obj)
                 if permitted:
                     return True
-                if request.user.get_role() == user_type:
+                if hasattr(request.user, 'get_role') and request.user.get_role() == user_type:
                     return True
                 return False
 
@@ -34,3 +34,16 @@ class PermissionFactory():
                 return self.has_object_permission(request, view, None) and super().has_permission(request, view)
 
         return Permission
+
+
+class IsReadyOnlyRequest(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return request.method in permissions.SAFE_METHODS
+
+
+class IsPostRequest(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return request.method == "POST"
+

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Customer, Specialist, Speciality, User, UserCatalogue, SpecialityCatalogue
@@ -42,7 +42,9 @@ class Location(models.Model):
 
 
 class LocationCatalogue(metaclass=Singleton):
-    locations = Location.objects.all()
+    @property
+    def locations(self):
+        return Location.objects.all()
 
     def search(self, query):
         print("Location Catalogue", query)
@@ -158,9 +160,17 @@ class Request(models.Model):
         self.set_status(Request.RequestStatus.CANCELED)
         self.save()
 
+    def mark_as_finished(self):
+        self.set_status(Request.RequestStatus.DONE)
+        self.set_completed_at(datetime.now())
+        self.save()
+
 
 class RequestCatalogue(metaclass=Singleton):
-    requests = Request.objects.all()
+    sortable_fields=['status','completed_at','updated_at','customer__normal_user__score']
+    @property
+    def requests(self):
+        return Request.objects.all()
 
     def search(self, query: dict):
         result = self.requests
@@ -182,10 +192,15 @@ class RequestCatalogue(metaclass=Singleton):
                 'role': User.UserRole.Specialist
             }
             users = UserCatalogue().search(query=specialist_query)
-            result = result.filter(specialist_normal_user__user__in=users)
+            result = result.filter(specialist__normal_user__user__in=users)
 
         if query.get('speciality'):
-            speciality_query =  query.get('speciality')
+
+            try:
+                speciality_query = query.get('speciality')['id']
+            except:
+                speciality_query = query.get('speciality')
+
             result = result.filter(requested_speciality__in=ListAdapter().python_ensure_list(speciality_query))
 
         if query.get('location'):
@@ -207,6 +222,20 @@ class RequestCatalogue(metaclass=Singleton):
             if query.get(field):
                 result = result.filter(**{'_'.join(field.split('_')[:-1]) + "__lte": query.get(field)})
 
+        if query.get("sort"):
+            sort_fields = query.get("sort").split(",")
+            if len(sort_fields) == 0:
+                return result
+            good_fields = []
+            for field in sort_fields:
+                if field[0] == '-':
+                    if field[1:] in self.sortable_fields:
+                        good_fields.append(field)
+                else:
+                    if field in self.sortable_fields:
+                        good_fields.append(field)
+            return result.order_by(*good_fields)
+
         return result
 
     def get_requests(self):
@@ -214,3 +243,11 @@ class RequestCatalogue(metaclass=Singleton):
 
     def sort_by_time(self):
         return self.requests.order_by('desired_start_time')
+
+    def sort_by_popularity(self, queryset):
+        return queryset.values('requested_speciality').annotate(
+            count=Count('requested_speciality')).order_by("-count")
+
+    def sort_by_popularity_category(self, queryset):
+        return queryset.values('requested_speciality__parent').annotate(
+            count=Count('requested_speciality__parent')).order_by("-count")
