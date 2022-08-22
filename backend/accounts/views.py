@@ -7,6 +7,7 @@ from typing import Type
 from django.contrib.auth import login
 from django.core.files.base import ContentFile
 from django.http import JsonResponse, HttpResponse
+
 from knox.auth import TokenAuthentication
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView, LogoutView as KnoxLogoutView
@@ -20,6 +21,8 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.views import APIView
 
+from feedback.models import FeedbackCatalogue
+from feedback.serializers import EvaluationMetricSerializer, FeedbackReadOnlySerializer
 from accounts.constants import *
 from arno.settings import MEDIA_ROOT
 from log.models import Logger
@@ -417,3 +420,51 @@ class DocumentUploadView(APIView):
         doc: str = specialist.documents.path
         index = doc.find('/media')
         return JsonResponse({'document': doc[index:]}, status=status.HTTP_200_OK)
+
+
+class UserSatisfactionView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [PermissionFactory(
+        User.UserRole.CompanyManager).get_permission_class()]
+
+    @Logger().log_name()
+    def get(self, request):
+        role = request.GET.get('role', User.UserRole.Customer)
+        threshold = int(request.GET.get('threshold', 50))
+
+        if role not in [User.UserRole.Customer, User.UserRole.Specialist]:
+            return JsonResponse({'error': INVALID_ROLE}, status=status.HTTP_400_BAD_REQUEST)
+
+        users = UserCatalogue().search({'role': role})
+        print(users)
+
+        user_serialized_data = []
+        if role == User.UserRole.Customer:
+            user_serialized_data = [CustomerFullSerializer(
+                u.full_user).data for u in users]
+        else:
+            user_serialized_data = [SpecialistFullSerializer(
+                u.full_user).data for u in users]
+
+        result = []
+        for i, user in enumerate(users):
+            user_feedbacks = FeedbackCatalogue().search({'user': user.id})
+
+            bad_feedbacks = []
+            bad_metrics = set()
+            for feedback in user_feedbacks:
+                if feedback.get_average_score() < threshold:
+                    bad_feedbacks.append(feedback)
+                for metric_score in feedback.metric_scores.all():
+                    if metric_score.score < threshold:
+                        bad_metrics.add(metric_score.metric)
+
+            if len(bad_feedbacks) > 0 or len(bad_metrics) > 0:
+                result.append({'user': user_serialized_data[i],
+                            'total_feedbacks_count': user_feedbacks.count(),
+                            'bad_feedbacks': FeedbackReadOnlySerializer(bad_feedbacks, many=True).data,
+                            'bad_metrics': EvaluationMetricSerializer(list(bad_metrics), many=True).data})
+
+        return JsonResponse({
+            'users': result
+        })

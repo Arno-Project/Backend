@@ -288,7 +288,7 @@ class UserCatalogue(metaclass=Singleton):
 
         if query.get('role'):
             print(query.get('role'))
-            result = result.filter(Q(role__icontains=query['role']))
+            result = result.filter(Q(role=query['role']))
         elif query.get('roles'):
             roles = query['roles'].split(',')
             result = result.filter(Q(role__in=roles))

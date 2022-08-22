@@ -117,6 +117,15 @@ class Feedback(models.Model):
             s.delete()
         return super().delete(*args, **kwargs)
 
+    def get_average_score(self):
+        counter = 0
+        sum = 0
+        for metric_score in self.metric_scores.all():
+            sum += metric_score.score
+            counter += 1
+
+        return 100 if counter == 0 else sum / counter
+
 
 class FeedbackCatalogue(metaclass=Singleton):
     @property
@@ -127,16 +136,26 @@ class FeedbackCatalogue(metaclass=Singleton):
         return self.feedbacks
 
     def search_by_request(self, request_id, user_id) -> Feedback:
-        try:
-            return self.feedbacks.filter(request__id=request_id, user__user__id=user_id)
-        except Feedback.DoesNotExist:
-            return None
+        return self.feedbacks.filter(request__id=request_id, user__user__id=user_id)
 
     def search_after_time(self, time):
         pass
 
     def sort_by_time(self, ascending=True):
         pass
+
+    def search(self, query):
+        result = self.feedbacks
+        print("feedback " , query)
+
+        if query.get('user'):
+
+            result = result.filter(user__user__id=query['user'])
+
+        if query.get('request'):
+            result = result.filter(request__id=query['request'])
+
+        return result
 
 
 class SystemFeedbackReply(models.Model):
@@ -275,7 +294,7 @@ class ScoreCalculator:
                 counter += 1
 
         if counter == 0:
-            self.normal_user.set_score(5)
+            self.normal_user.set_score(100)
         else:
             self.normal_user.set_score(sum / counter)
         self.normal_user.save()
