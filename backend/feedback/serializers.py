@@ -46,7 +46,14 @@ class SystemFeedbackSerializer(serializers.ModelSerializer):
 
 
 class MetricScoreSerializer(serializers.ModelSerializer):
-    # metric = EvaluationMetricSerializer()
+
+    class Meta:
+        model = MetricScore
+        fields = ('metric', 'score')
+
+
+class MetricScoreReadOnlySerializer(serializers.ModelSerializer):
+    metric = EvaluationMetricSerializer()
 
     class Meta:
         model = MetricScore
@@ -67,7 +74,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
 
 class FeedbackReadOnlySerializer(FeedbackSerializer):
-    metric_scores = MetricScoreSerializer(many=True)
+    metric_scores = MetricScoreReadOnlySerializer(many=True)
     user = serializers.NormalUserSerializer()
 
     class Meta(FeedbackSerializer.Meta):
