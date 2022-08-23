@@ -315,6 +315,7 @@ class RequestInitialAcceptBySpecialistView(APIView):
         if USE_SCORE_LIMIT:
             on_going_request_count = RequestCatalogue().search(query={'specialist': {'id': user.full_user.id}}).exclude(
                 status__exact=Request.RequestStatus.DONE).exclude(status__exact=Request.RequestStatus.CANCELED).count()
+            print("on going ",on_going_request_count)
             ScoreCalculator(user.general_user).update_score()
             if on_going_request_count >= ScorePolicyChecker(user.general_user.score).get_allowed_request():
                 return Response({
