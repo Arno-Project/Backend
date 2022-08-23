@@ -210,7 +210,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_ROOT = os.path.join(CORE_DIR, "arno/staticfiles")
-STATIC_URL = "/static/"
+STATIC_URL = "/static2/"
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory where uploaded media is saved.
 MEDIA_URL = '/media/'  # Public URL at the browser
