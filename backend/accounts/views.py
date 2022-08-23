@@ -62,6 +62,10 @@ class RegisterView(generics.GenericAPIView, ABC):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        if role == User.UserRole.Specialist or role == User.UserRole.Customer:
+            user.normal_user.score = 100
+            user.save()
+            user.normal_user.save()
 
         return JsonResponse({
             **(self.first_serializer if role == self.first_serializer_role else self.second_serializer)(user).data[
