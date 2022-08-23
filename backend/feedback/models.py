@@ -297,7 +297,7 @@ class ScorePolicyChecker:
     def get_allowed_request(self):
         if not USE_SCORE_LIMIT:
             return 20
-        score_policies = ScorePolicy.objects.all().order_by('-minimum_score')
+        score_policies = ScorePolicy.objects.all().order_by('minimum_score')
         if not score_policies.exists():
             print("no score policy")
             best_allowed_request = 20
