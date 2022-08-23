@@ -232,7 +232,6 @@ class RequestCancelByCustomerView(APIView):
 
     @Logger().log_name()
     def post(self, request):
-        # TODO Add more checks on status of request
         request_id = request.data.get('request_id')
         _request = RequestCatalogue().search(query={'id': request_id})
         if not _request.exists():
@@ -301,7 +300,7 @@ class RequestInitialAcceptBySpecialistView(APIView):
             return Response({
                 'error': _(REQUEST_ALREADY_IN_INITIAL_ACCEPTANCE_STATUS_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
-        # TODO DUPLICATE
+
         if request.get_status() != Request.RequestStatus.PENDING:
             return Response({
                 'error': _(REQUEST_NOT_IN_PENDING_ERROR)
@@ -331,7 +330,6 @@ class RequestInitialAcceptBySpecialistView(APIView):
             return result
         core_request = core_request.first()
 
-        # TODO, More OOP Refactor
         core_request.set_status(Request.RequestStatus.WAITING_FOR_SPECIALIST_ACCEPTANCE_FROM_CUSTOMER)
         core_request.set_specialist(request.user.full_user)
         core_request.save()
@@ -393,7 +391,6 @@ class SelectSpecialistForRequestView(APIView):
         core_request = core_request.first()
         specialist = specialist.first().full_user
 
-        # TODO, More OOP Refactor
         core_request.set_status(Request.RequestStatus.WAITING_FOR_CUSTOMER_ACCEPTANCE_FROM_SPECIALIST)
         core_request.set_specialist(specialist)
         core_request.save()
@@ -434,7 +431,7 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
             return Response({
                 'error': _(IS_ACCEPT_REQUIRED_ERROR)
             }, status=HTTP_400_BAD_REQUEST)
-        # TODO, More OOP Refactor
+
         if is_accept == "1":
             if USE_SCORE_LIMIT:
                 if request.user.get_role() == User.UserRole.Specialist:
@@ -452,7 +449,7 @@ class RequestAcceptanceFinalizeView(APIView, ABC):
             self.notification_builder_accept(core_request).build()
         else:
             core_request.set_status(Request.RequestStatus.PENDING)
-            core_request.set_accepted_at(datetime.datetime.now())  # TODO check timezone
+            core_request.set_accepted_at(datetime.datetime.now())
             self.notification_builder_reject(core_request).build()
             core_request.set_specialist(None)
 
